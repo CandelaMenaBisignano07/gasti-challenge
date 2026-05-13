@@ -34,3 +34,7 @@ coverage/
 .cache/
 *.tsbuildinfo
 next-env.d.ts
+
+# per-user agent / skill tooling (Claude Code, skills CLI)
+.agents/
+.claude/
