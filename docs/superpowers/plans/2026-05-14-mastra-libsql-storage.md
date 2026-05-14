@@ -18,13 +18,17 @@
 
 | File | Action | Responsibility |
 |---|---|---|
-| `apps/ai/package.json` | Modify | Add `@mastra/libsql` dependency |
+| `apps/ai/package.json` | Modify | Add `@mastra/libsql`, bump `@mastra/core` + `mastra` to 1.x |
+| `apps/ai/src/mastra/agents/index.ts` | Modify | Adopt Mastra 1.x Agent API (explicit `id`) |
+| `CLAUDE.md` (root) | Modify | Update stack notes line to reflect Mastra 1.x |
 | `.gitignore` (root) | Modify | Ignore local `.db` files and SQLite WAL sidecars |
 | `apps/ai/.env.example` | Modify | Document `DATABASE_FILE` |
 | `apps/ai/src/mastra/storage.ts` | **Create** | LibSQLStore factory: read env, resolve URL, build store |
 | `apps/ai/src/mastra/index.ts` | Modify | Call factory, pass to `new Mastra({ storage })` |
 
-Task order: dependency → safety net (gitignore) → docs (env example) → code module → wiring + end-to-end verification.
+Task order: dependency → version migration (1.x) → safety net (gitignore) → docs (env example) → code module → wiring + end-to-end verification.
+
+**Note on Task 1b:** It was inserted after the original Task 1 commit landed, when a peer-dependency mismatch surfaced during code-quality review. See the rationale at the top of Task 1b.
 
 ---
 
@@ -69,6 +73,81 @@ Expected: file exists.
 ```bash
 git add apps/ai/package.json bun.lock
 git commit -m "feat(ai): add @mastra/libsql dependency"
+```
+
+---
+
+### Task 1b: Migrate `apps/ai` to Mastra 1.x
+
+**Why this task exists:** Task 1 installed `@mastra/libsql@1.10.1`, which declares a peer dependency `@mastra/core >=1.32.0`. The project scaffold pinned `@mastra/core@^0.10.0` and `mastra@^0.4.0`. `bun` permitted the install but the resulting tree is incompatible — `LibSQLStore` (1.x) and `@mastra/core` (0.10) cannot interoperate at runtime. `@mastra/libsql` has no 0.x release, so the only path forward is to upgrade `apps/ai` to Mastra 1.x.
+
+**Files:**
+- Modify: `apps/ai/package.json`
+- Modify: `apps/ai/src/mastra/agents/index.ts`
+- Modify: `CLAUDE.md` (root — stack notes line)
+- Modify: `bun.lock` (regenerated automatically)
+
+- [ ] **Step 1: Bump `@mastra/core` and `mastra` to 1.x**
+
+```bash
+bun add @mastra/core@^1.33.0 mastra@^1.9.0 --filter=ai
+```
+
+Expected: `apps/ai/package.json` has `"@mastra/core": "^1.33.0"` and `"mastra": "^1.9.0"`. `bun.lock` updates. No peer-dep warnings about `@mastra/libsql` after this.
+
+- [ ] **Step 2: Verify peer deps are now satisfied**
+
+```bash
+bun install 2>&1 | grep -i "peer\|warn" | head -5
+```
+
+Expected: no warnings mentioning `@mastra/libsql` and `@mastra/core` incompatibility. (Empty output is fine.)
+
+- [ ] **Step 3: Update the placeholder agent for Mastra 1.x**
+
+Overwrite `apps/ai/src/mastra/agents/index.ts` with this exact content:
+
+```ts
+import { Agent } from '@mastra/core/agent';
+import { openai } from '@ai-sdk/openai';
+
+export const placeholderAgent = new Agent({
+  id: 'placeholder-agent',
+  name: 'Placeholder Agent',
+  instructions: 'You are a placeholder agent. Replace me.',
+  model: openai('gpt-4o-mini'),
+});
+```
+
+**What changed:** added explicit `id`. In Mastra 1.x `id` and `name` are separate fields (`id` is unique identifier; `name` is display label). `id` defaults to `name` if omitted, so the previous code would not crash, but being explicit is the documented pattern.
+
+- [ ] **Step 4: Typecheck the workspace**
+
+```bash
+cd apps/ai && bunx tsc --noEmit -p tsconfig.json && cd ../..
+```
+
+Expected: no errors.
+
+- [ ] **Step 5: Update CLAUDE.md stack notes**
+
+In `CLAUDE.md`, find the line:
+
+```
+- **Mastra `^0.10`** + `@ai-sdk/openai` in `apps/ai`.
+```
+
+Replace with:
+
+```
+- **Mastra `^1.33`** (`@mastra/core`) + `mastra@^1.9` CLI + `@mastra/libsql` + `@ai-sdk/openai` in `apps/ai`.
+```
+
+- [ ] **Step 6: Commit**
+
+```bash
+git add apps/ai/package.json apps/ai/src/mastra/agents/index.ts CLAUDE.md bun.lock
+git commit -m "chore(ai): migrate to Mastra 1.x for libSQL compatibility"
 ```
 
 ---
