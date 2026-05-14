@@ -185,4 +185,4 @@ These are project-level violations. Do not do them — call them out if asked to
 - **Turborepo** pipelines: `dev` is non-cached and persistent, `build` is cached, `start` depends on `build`.
 - **NestJS 10** in `apps/api` — modules, providers, DI, controllers.
 - **Next.js 15 (App Router) + React 19 + Tailwind 3** in `apps/ui`.
-- **Mastra `^0.10`** + `@ai-sdk/openai` in `apps/ai`.
+- **Mastra `^1.33`** (`@mastra/core`) + `mastra@^1.9` CLI + `@mastra/libsql` + `@ai-sdk/openai` in `apps/ai`.
