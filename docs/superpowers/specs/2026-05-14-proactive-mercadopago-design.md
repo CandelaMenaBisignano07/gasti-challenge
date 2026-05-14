@@ -418,9 +418,11 @@ Reconnect after drop:
 
 ---
 
-## 6. SQLite schema
+## 6. Storage — libsql
 
-One DB file at `apps/api/data/gasti.db`. Migrations run on app boot.
+`apps/api` persists everything in a single libsql database at `apps/api/data/gasti.db`, accessed via `@libsql/client` (`createClient({ url: 'file:apps/api/data/gasti.db' })`). PRODUCT.md already nominates `@mastra/libsql` for Mastra's memory adapter in `apps/ai`; using `@libsql/client` in `apps/api` keeps both workspaces on the same SQL dialect and the same on-disk format. The schema below is plain SQLite-compatible DDL; libsql executes it verbatim.
+
+Migrations run on app boot via a small idempotent `runMigrations(client)` helper that issues each `create table if not exists` / `create index if not exists` statement in order.
 
 ```sql
 create table users (
