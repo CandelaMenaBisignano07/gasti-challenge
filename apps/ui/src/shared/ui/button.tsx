@@ -29,7 +29,7 @@ const VARIANT: Record<ButtonVariant, string> = {
 
 const SIZE: Record<ButtonSize, string> = {
   md: 'h-11 px-s6 text-[14px] leading-none',
-  sm: 'h-9  px-s5 text-[13px] leading-none',
+  sm: 'h-9 px-s5 text-[13px] leading-none',
 };
 
 export function Button({

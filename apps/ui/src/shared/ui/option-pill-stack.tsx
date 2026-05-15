@@ -10,11 +10,12 @@ export type Option = {
 type OptionPillStackProps = {
   options: Option[];
   onPick: (id: string) => void;
+  label?: string;
 };
 
-export function OptionPillStack({ options, onPick }: OptionPillStackProps) {
+export function OptionPillStack({ options, onPick, label = 'Opciones' }: OptionPillStackProps) {
   return (
-    <div role="group" className="flex flex-col gap-s2">
+    <div role="group" aria-label={label} className="flex flex-col gap-s2">
       {options.map((opt) => (
         <button
           key={opt.id}

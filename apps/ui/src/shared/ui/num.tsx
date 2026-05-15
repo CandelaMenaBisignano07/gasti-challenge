@@ -58,18 +58,19 @@ export function Num({
   percent = false,
   className,
 }: NumProps) {
+  const safeValue = Number.isFinite(value) ? value : 0;
   const resolvedTone: NumTone =
     tone === 'ink' && (signed || delta)
-      ? value < 0
+      ? safeValue < 0
         ? 'neg'
-        : value > 0
+        : safeValue > 0
         ? 'pos'
         : 'ink'
       : tone;
 
   return (
     <span className={['num', SIZE_CLASS[size], TONE_CLASS[resolvedTone], className].filter(Boolean).join(' ')}>
-      {formatValue(value, { signed, delta, percent })}
+      {formatValue(safeValue, { signed, delta, percent })}
     </span>
   );
 }
