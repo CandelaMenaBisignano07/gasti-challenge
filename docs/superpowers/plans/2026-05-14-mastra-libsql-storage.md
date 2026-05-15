@@ -231,6 +231,8 @@ git commit -m "docs(ai): document DATABASE_FILE env var"
 
 ### Task 4: Create the LibSQLStore factory
 
+> **Post-implementation correction:** Task 5 verification revealed the factory below is buggy. `mastra dev` runs the bundled app with `process.cwd()` set to an internal serving dir (`src/mastra/public`), not the package root, so cwd-relative resolution put the DB in the wrong place; and libSQL does not create the parent directory, causing `SQLITE_CANTOPEN`. The shipped `storage.ts` anchors relative paths to the nearest `package.json` and `mkdir`s the parent. See commit `fix(ai): anchor libSQL storage to package root and ensure its directory exists`.
+
 **Files:**
 - Create: `apps/ai/src/mastra/storage.ts`
 
