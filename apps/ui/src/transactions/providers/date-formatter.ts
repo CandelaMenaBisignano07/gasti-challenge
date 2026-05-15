@@ -7,5 +7,5 @@ export function formatTransactionDate(iso: string, locale: Locale = 'es'): strin
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return iso;
   const fmt = locale === 'en' ? FMT_EN : FMT_ES;
-  return fmt.format(d).replace('.', '').toLowerCase().replace(/^(\w)/, (m) => m);
+  return fmt.format(d).replace(/\./g, '').toLowerCase();
 }
