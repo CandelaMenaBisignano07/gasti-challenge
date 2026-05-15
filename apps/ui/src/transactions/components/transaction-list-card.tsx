@@ -1,8 +1,7 @@
 import { Card } from '@/shared/ui/card';
 import { TransactionRow } from '@/transactions/components/transaction-row';
 import type { Transaction } from '@/transactions/domain/transaction';
-
-type Locale = 'es' | 'en';
+import type { Locale } from '@/chat/domain/message';
 
 type TransactionListCardProps = {
   items: Transaction[];
