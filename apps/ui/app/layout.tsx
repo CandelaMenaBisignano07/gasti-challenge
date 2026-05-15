@@ -22,8 +22,6 @@ const instrumentSerif = Instrument_Serif({
   display: 'swap',
 });
 
-const noFlashScript = `try{var t=localStorage.getItem('gasti-theme');if(t==='light'||t==='dark')document.documentElement.setAttribute('data-theme',t);}catch(e){}`;
-
 export const metadata: Metadata = {
   title: 'Gasti',
   description: 'Tu asistente financiero conversacional.',
@@ -32,9 +30,6 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="es" className={`${geist.variable} ${geistMono.variable} ${instrumentSerif.variable}`}>
-      <head>
-        <script dangerouslySetInnerHTML={{ __html: noFlashScript }} />
-      </head>
       <body>{children}</body>
     </html>
   );
