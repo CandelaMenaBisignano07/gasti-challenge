@@ -1,6 +1,7 @@
 import { LibSQLStore } from '@mastra/libsql';
 import { existsSync, mkdirSync } from 'node:fs';
 import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 
 const DEFAULT_RELATIVE_PATH = '.gasti/mastra.db';
 const LIBSQL_NATIVE_PREFIXES = ['file:', 'libsql://', ':memory:'];
@@ -38,8 +39,12 @@ function resolveDbUrl(): string {
 
 /** libSQL does not create the parent directory of a file database — do it here. */
 function ensureParentDir(url: string): void {
-  if (!url.startsWith('file:')) return;
-  mkdirSync(path.dirname(url.slice('file:'.length)), { recursive: true });
+  // `:memory:` and `libsql://` have no local directory to create.
+  if (url.startsWith('file://')) {
+    mkdirSync(path.dirname(fileURLToPath(url)), { recursive: true });
+  } else if (url.startsWith('file:')) {
+    mkdirSync(path.dirname(url.slice('file:'.length)), { recursive: true });
+  }
 }
 
 export function buildMastraStorage() {
