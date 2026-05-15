@@ -377,7 +377,7 @@ After Task 5 all of the following hold:
 5. `apps/ai/src/mastra/index.ts` passes `buildMastraStorage()` into `new Mastra({ storage })`.
 6. `bun dev --filter=ai` starts cleanly and creates the DB file at the configured path.
 7. `git status` is clean after running the agent.
-8. Branch has exactly five commits since the spec commit, one per task.
+8. Branch has one commit per task since the spec commit, plus the inserted Task 1b and a follow-up `fix(ai)` commit that corrected the storage factory after Task 5 verification surfaced a runtime bug.
 
 ## Out of scope (do NOT do here)
 
