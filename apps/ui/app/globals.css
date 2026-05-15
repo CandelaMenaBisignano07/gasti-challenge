@@ -130,3 +130,104 @@ body {
     transition-duration: 0.001ms !important;
   }
 }
+
+/* ── Dark mode ───────────────────────────────────────────────── */
+:root[data-theme="dark"] {
+  --mesh-ambient:
+    radial-gradient(60% 55% at 12% 18%, rgba(255,176,136,0.32) 0%, rgba(255,176,136,0) 60%),
+    radial-gradient(55% 50% at 92% 12%, rgba(255,122,92,0.28)  0%, rgba(255,122,92,0)  62%),
+    radial-gradient(70% 60% at 18% 92%, rgba(106,139,255,0.30) 0%, rgba(106,139,255,0) 65%),
+    radial-gradient(70% 70% at 88% 88%, rgba(182,156,255,0.32) 0%, rgba(182,156,255,0) 65%),
+    linear-gradient(135deg, #1B1430 0%, #181433 50%, #14132E 100%);
+
+  --surface-0:       #1B1928;
+  --surface-1:       #13111F;
+  --surface-2:       #221F32;
+  --surface-3:       #2A2740;
+  --surface-tint:    #221A38;
+  --surface-frost:   rgba(27, 25, 40, 0.55);
+  --surface-frost-2: rgba(27, 25, 40, 0.40);
+
+  --ink-1: #F5F4FB;
+  --ink-2: #C9C5DC;
+  --ink-3: #8F8AA8;
+  --ink-4: #5C5876;
+
+  --brand-indigo:      #6E61FF;
+  --brand-indigo-deep: #4F46E5;
+  --brand-indigo-soft: #2A2349;
+  --ai-violet:         #9183FF;
+  --ai-violet-soft:    #2A2244;
+  --ai-violet-ink:     #B7ADFF;
+  --brand-grad:        linear-gradient(180deg, #8A7EFF 0%, #4F46E5 100%);
+  --brand-glow:
+    0 10px 30px -10px rgba(110, 97, 255, 0.55),
+    inset 0 1px 0 rgba(255,255,255,0.10);
+
+  --line-1:     rgba(255, 255, 255, 0.06);
+  --line-2:     rgba(255, 255, 255, 0.10);
+  --line-mesh:  rgba(255, 255, 255, 0.18);
+  --line-inner: rgba(255, 255, 255, 0.10);
+
+  --pos:  #38D69E;  --pos-soft:  #1A3328;
+  --neg:  #FF6B6B;  --neg-soft:  #361F23;
+  --warn: #FFB95C;  --warn-soft: #2E2419;
+  --info: #6E94FF;  --info-soft: #1C233E;
+
+  --e-1: 0 1px 2px rgba(0,0,0,0.30), 0 1px 1px rgba(0,0,0,0.20);
+  --e-2: 0 4px 14px -6px rgba(0,0,0,0.45), 0 2px 4px rgba(0,0,0,0.20);
+  --e-3: 0 16px 40px -16px rgba(0,0,0,0.60), 0 4px 12px rgba(0,0,0,0.25);
+  --e-4: 0 30px 80px -28px rgba(0,0,0,0.75), 0 8px 24px rgba(0,0,0,0.30);
+  --e-glow-ai: 0 12px 36px -12px rgba(145, 131, 255, 0.55);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --mesh-ambient:
+      radial-gradient(60% 55% at 12% 18%, rgba(255,176,136,0.32) 0%, rgba(255,176,136,0) 60%),
+      radial-gradient(55% 50% at 92% 12%, rgba(255,122,92,0.28)  0%, rgba(255,122,92,0)  62%),
+      radial-gradient(70% 60% at 18% 92%, rgba(106,139,255,0.30) 0%, rgba(106,139,255,0) 65%),
+      radial-gradient(70% 70% at 88% 88%, rgba(182,156,255,0.32) 0%, rgba(182,156,255,0) 65%),
+      linear-gradient(135deg, #1B1430 0%, #181433 50%, #14132E 100%);
+
+    --surface-0:       #1B1928;
+    --surface-1:       #13111F;
+    --surface-2:       #221F32;
+    --surface-3:       #2A2740;
+    --surface-tint:    #221A38;
+    --surface-frost:   rgba(27, 25, 40, 0.55);
+    --surface-frost-2: rgba(27, 25, 40, 0.40);
+
+    --ink-1: #F5F4FB;
+    --ink-2: #C9C5DC;
+    --ink-3: #8F8AA8;
+    --ink-4: #5C5876;
+
+    --brand-indigo:      #6E61FF;
+    --brand-indigo-deep: #4F46E5;
+    --brand-indigo-soft: #2A2349;
+    --ai-violet:         #9183FF;
+    --ai-violet-soft:    #2A2244;
+    --ai-violet-ink:     #B7ADFF;
+    --brand-grad:        linear-gradient(180deg, #8A7EFF 0%, #4F46E5 100%);
+    --brand-glow:
+      0 10px 30px -10px rgba(110, 97, 255, 0.55),
+      inset 0 1px 0 rgba(255,255,255,0.10);
+
+    --line-1:     rgba(255, 255, 255, 0.06);
+    --line-2:     rgba(255, 255, 255, 0.10);
+    --line-mesh:  rgba(255, 255, 255, 0.18);
+    --line-inner: rgba(255, 255, 255, 0.10);
+
+    --pos:  #38D69E;  --pos-soft:  #1A3328;
+    --neg:  #FF6B6B;  --neg-soft:  #361F23;
+    --warn: #FFB95C;  --warn-soft: #2E2419;
+    --info: #6E94FF;  --info-soft: #1C233E;
+
+    --e-1: 0 1px 2px rgba(0,0,0,0.30), 0 1px 1px rgba(0,0,0,0.20);
+    --e-2: 0 4px 14px -6px rgba(0,0,0,0.45), 0 2px 4px rgba(0,0,0,0.20);
+    --e-3: 0 16px 40px -16px rgba(0,0,0,0.60), 0 4px 12px rgba(0,0,0,0.25);
+    --e-4: 0 30px 80px -28px rgba(0,0,0,0.75), 0 8px 24px rgba(0,0,0,0.30);
+    --e-glow-ai: 0 12px 36px -12px rgba(145, 131, 255, 0.55);
+  }
+}
