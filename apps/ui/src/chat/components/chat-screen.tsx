@@ -14,7 +14,7 @@ export function ChatScreen() {
 
   return (
     <>
-      {isEmpty && <MeshBackground />}
+      <MeshBackground visible={isEmpty} />
       <div className="relative flex min-h-screen flex-col">
         <Header variant={isEmpty ? 'frosted' : 'solid'} />
 
@@ -22,7 +22,7 @@ export function ChatScreen() {
           {isEmpty ? (
             <LandingHero />
           ) : (
-            <ConversationThread messages={messages} />
+            <ConversationThread messages={messages} pending={status === 'thinking'} />
           )}
         </main>
 
