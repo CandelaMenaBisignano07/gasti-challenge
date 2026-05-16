@@ -23,6 +23,11 @@ export function BarMeter({ value, tone, animateOnMount = true, ariaLabel, classN
 
   useEffect(() => {
     if (!animateOnMount) return;
+    const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (reduced) {
+      setDisplayed(target);
+      return;
+    }
     const id = requestAnimationFrame(() => setDisplayed(target));
     return () => cancelAnimationFrame(id);
   }, [animateOnMount, target]);
