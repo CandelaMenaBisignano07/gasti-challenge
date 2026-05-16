@@ -17,7 +17,11 @@ export function LandingHero() {
 
   return (
     <div className="flex w-full flex-col items-center gap-s7 px-s4 pt-s10">
-      <Card variant="frosted" radius="xl" className="w-full max-w-[640px] px-s6 py-s8">
+      <Card
+        variant="frosted"
+        radius="xl"
+        className="w-full max-w-[640px] px-s6 py-s8 animate-message-enter"
+      >
         <h1 className="font-display text-[44px] font-bold leading-[1.04] tracking-tight text-ink-1">
           Tu <span style={{ color: 'var(--ai-violet-ink)' }}>asistente financiero</span> conversacional.
         </h1>
@@ -27,13 +31,18 @@ export function LandingHero() {
       </Card>
 
       <div className="flex w-full max-w-[640px] flex-col gap-s3">
-        {SUGGESTIONS.map((s) => (
-          <SuggestionChip
+        {SUGGESTIONS.map((s, i) => (
+          <div
             key={s.label}
-            icon={s.icon}
-            label={s.label}
-            onClick={() => void sendMessage(s.label)}
-          />
+            className="animate-message-enter"
+            style={{ animationDelay: `${90 + i * 70}ms` }}
+          >
+            <SuggestionChip
+              icon={s.icon}
+              label={s.label}
+              onClick={() => void sendMessage(s.label)}
+            />
+          </div>
         ))}
       </div>
     </div>
