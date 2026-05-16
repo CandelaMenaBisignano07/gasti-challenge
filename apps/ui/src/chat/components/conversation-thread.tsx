@@ -3,18 +3,20 @@
 import { useEffect, useRef } from 'react';
 import { UserMessage } from '@/chat/components/user-message';
 import { GastiMessage } from '@/chat/components/gasti-message';
+import { ThinkingIndicator } from '@/chat/components/thinking-indicator';
 import type { Message } from '@/chat/domain/message';
 
 type ConversationThreadProps = {
   messages: Message[];
+  pending?: boolean;
 };
 
-export function ConversationThread({ messages }: ConversationThreadProps) {
+export function ConversationThread({ messages, pending = false }: ConversationThreadProps) {
   const bottomRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' });
-  }, [messages.length]);
+  }, [messages.length, pending]);
 
   return (
     <div
@@ -30,6 +32,7 @@ export function ConversationThread({ messages }: ConversationThreadProps) {
           <GastiMessage key={m.id} message={m} />
         ),
       )}
+      {pending && <ThinkingIndicator />}
       <div ref={bottomRef} aria-hidden="true" />
     </div>
   );
