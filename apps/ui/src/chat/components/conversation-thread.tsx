@@ -1,3 +1,6 @@
+'use client';
+
+import { useEffect, useRef } from 'react';
 import { UserMessage } from '@/chat/components/user-message';
 import { GastiMessage } from '@/chat/components/gasti-message';
 import type { Message } from '@/chat/domain/message';
@@ -7,6 +10,12 @@ type ConversationThreadProps = {
 };
 
 export function ConversationThread({ messages }: ConversationThreadProps) {
+  const bottomRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    bottomRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' });
+  }, [messages.length]);
+
   return (
     <div
       role="log"
@@ -21,6 +30,7 @@ export function ConversationThread({ messages }: ConversationThreadProps) {
           <GastiMessage key={m.id} message={m} />
         ),
       )}
+      <div ref={bottomRef} aria-hidden="true" />
     </div>
   );
 }
