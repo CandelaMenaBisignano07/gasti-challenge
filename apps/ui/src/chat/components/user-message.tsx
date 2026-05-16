@@ -9,7 +9,7 @@ type UserMessageProps = {
 export function UserMessage({ message }: UserMessageProps) {
   const label = 'Vos';
   return (
-    <article aria-label={label} className="flex w-full justify-end">
+    <article aria-label={label} className="flex w-full justify-end animate-message-enter">
       <div className="flex max-w-[480px] flex-col items-end gap-s2">
         <Pill tone="ai">{label}</Pill>
         <Card variant="plain" elevation={1} radius="lg" className="px-s4 py-s3">

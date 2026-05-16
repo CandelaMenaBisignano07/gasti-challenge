@@ -9,7 +9,7 @@ type GastiMessageProps = {
 
 export function GastiMessage({ message }: GastiMessageProps) {
   return (
-    <article aria-label="Gasti" className="flex w-full">
+    <article aria-label="Gasti" className="flex w-full animate-message-enter">
       <div className="flex max-w-[540px] flex-col gap-s2">
         <Eyebrow tone="ai">Gasti</Eyebrow>
         <p className="whitespace-pre-wrap font-display text-[17px] leading-[1.5] text-ink-1">
