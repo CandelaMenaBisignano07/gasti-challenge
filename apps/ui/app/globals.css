@@ -124,6 +124,8 @@ body {
 .editorial { font-family: var(--font-editorial), serif; font-style: italic; font-weight: 400; }
 
 /* ── Motion keyframes ────────────────────────────────────────── */
+/* Reduced-motion (below) neutralizes duration, not fill-mode: every keyframe's
+   `to`/`100%` frame MUST equal the element's resting state so it settles there. */
 @keyframes message-enter {
   from { opacity: 0; transform: translateY(10px); }
   to   { opacity: 1; transform: translateY(0); }
