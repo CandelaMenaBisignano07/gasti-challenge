@@ -77,7 +77,7 @@ export function Composer({
           'disabled:opacity-30',
         ].join(' ')}
       >
-        <Sparkle size={18} className={state === 'thinking' ? 'animate-pulse' : ''} />
+        <Sparkle size={18} className={state === 'thinking' ? 'animate-sparkle-pulse' : ''} />
       </button>
     </form>
   );
