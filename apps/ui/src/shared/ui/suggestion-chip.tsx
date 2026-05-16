@@ -18,7 +18,7 @@ export function SuggestionChip({ icon: Icon, label, onClick }: SuggestionChipPro
         'group flex w-full items-center gap-s3',
         'rounded-md border border-line-1 bg-surface-tint',
         'px-s4 py-s3 text-left',
-        'transition-shadow duration-base ease-out hover:shadow-2',
+        'shadow-2 transition-shadow duration-base ease-out hover:shadow-3',
         'outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ai',
       ].join(' ')}
     >
