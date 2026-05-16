@@ -106,6 +106,8 @@ export class MockChatRepository implements ChatRepository {
       }
 
       case 'topThisWeek': {
+        // Scripted figures verified against MOCK_TRANSACTIONS for the 2026-05-02..05-08 window:
+        // salud $83.900 (txn_013 + txn_006), comida $54.000 (txn_001/003/005/009), otros $45.000 (txn_007).
         const call = toolCall('topCategoriesInRange', { from: '2026-05-02', to: '2026-05-08' });
         yield { kind: 'toolCall', call };
         await delay(360);

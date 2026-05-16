@@ -1,4 +1,4 @@
-import type { Locale } from '@/chat/domain/message';
+import type { Locale } from '@/shared/i18n/locale';
 
 const FMT_ES = new Intl.DateTimeFormat('es-AR', { day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit' });
 const FMT_EN = new Intl.DateTimeFormat('en-US', { day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit' });

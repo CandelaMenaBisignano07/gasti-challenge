@@ -2,7 +2,7 @@ import { CategoryIcon } from '@/shared/icons/category-icon';
 import { Num } from '@/shared/ui/num';
 import { formatTransactionDate } from '@/transactions/providers/date-formatter';
 import type { Transaction } from '@/transactions/domain/transaction';
-import type { Locale } from '@/chat/domain/message';
+import type { Locale } from '@/shared/i18n/locale';
 
 type TransactionRowProps = {
   transaction: Transaction;

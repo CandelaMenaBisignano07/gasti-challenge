@@ -1,7 +1,8 @@
 import type { Transaction } from '@/transactions/domain/transaction';
 import type { BudgetProgress } from '@/budgets/domain/budget-progress';
 
-export type Locale = 'es' | 'en';
+export type { Locale } from '@/shared/i18n/locale';
+import type { Locale } from '@/shared/i18n/locale';
 
 export type ToolCall = {
   id: string;
