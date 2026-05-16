@@ -5,7 +5,6 @@ import { chatReducer, initialChatState, type ChatState } from '@/chat/infrastruc
 import { MockChatRepository } from '@/chat/repositories/mock-chat-repository';
 import { makeSendUserMessage } from '@/chat/use-cases/send-user-message';
 import { makeConfirmMutation } from '@/chat/use-cases/confirm-mutation';
-import { detectLocale } from '@/chat/providers/language-detector';
 
 export type ChatContextValue = ChatState & {
   sendMessage: (text: string) => Promise<void>;
@@ -16,7 +15,7 @@ export const ChatContext = createContext<ChatContextValue | null>(null);
 
 export function ChatProvider({ children }: { children: ReactNode }) {
   const repo = useMemo(() => new MockChatRepository(), []);
-  const sendUserMessage = useMemo(() => makeSendUserMessage({ repo, detectLocale }), [repo]);
+  const sendUserMessage = useMemo(() => makeSendUserMessage({ repo }), [repo]);
   const confirmMutation = useMemo(() => makeConfirmMutation({ repo }), [repo]);
 
   const [state, dispatch] = useReducer(chatReducer, initialChatState);

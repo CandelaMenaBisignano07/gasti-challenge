@@ -1,9 +1,6 @@
 import type { Transaction } from '@/transactions/domain/transaction';
 import type { BudgetProgress } from '@/budgets/domain/budget-progress';
 
-export type { Locale } from '@/shared/i18n/locale';
-import type { Locale } from '@/shared/i18n/locale';
-
 export type ToolCall = {
   id: string;
   name: string;
@@ -18,13 +15,12 @@ export type OptionPill = {
 
 export type MessageAttachment =
   | { kind: 'transactionList'; items: Transaction[] }
-  | { kind: 'budgetProgress'; progress: BudgetProgress; captionEs?: string }
+  | { kind: 'budgetProgress'; progress: BudgetProgress; caption?: string }
   | { kind: 'optionPills'; options: OptionPill[]; resolved?: boolean };
 
 export type UserMessage = {
   id: string;
   role: 'user';
-  locale: Locale;
   text: string;
   sentAt: string;
 };
@@ -32,7 +28,6 @@ export type UserMessage = {
 export type GastiMessage = {
   id: string;
   role: 'gasti';
-  locale: Locale;
   text: string;
   toolCalls?: ToolCall[];
   attachments?: MessageAttachment[];

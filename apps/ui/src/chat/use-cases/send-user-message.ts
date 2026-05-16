@@ -1,5 +1,5 @@
 import type { ChatRepository, ReplyEvent } from '@/chat/domain/chat-repository';
-import type { Locale, Message, UserMessage } from '@/chat/domain/message';
+import type { Message, UserMessage } from '@/chat/domain/message';
 
 export type DispatchedEvent =
   | { kind: 'appendUser'; message: UserMessage }
@@ -7,27 +7,24 @@ export type DispatchedEvent =
 
 type Deps = {
   repo: ChatRepository;
-  detectLocale: (text: string) => Locale;
   now?: () => Date;
   makeId?: () => string;
 };
 
-export function makeSendUserMessage({ repo, detectLocale, now = () => new Date(), makeId = defaultId }: Deps) {
+export function makeSendUserMessage({ repo, now = () => new Date(), makeId = defaultId }: Deps) {
   return async function* sendUserMessage(req: { text: string; history: Message[] }): AsyncIterable<DispatchedEvent> {
     const trimmed = req.text.trim();
     if (!trimmed) return;
 
-    const locale = detectLocale(trimmed);
     const userMessage: UserMessage = {
       id: makeId(),
       role: 'user',
-      locale,
       text: trimmed,
       sentAt: now().toISOString(),
     };
     yield { kind: 'appendUser', message: userMessage };
 
-    for await (const ev of repo.reply({ text: trimmed, locale, history: [...req.history, userMessage] })) {
+    for await (const ev of repo.reply({ text: trimmed, history: [...req.history, userMessage] })) {
       yield ev;
     }
   };

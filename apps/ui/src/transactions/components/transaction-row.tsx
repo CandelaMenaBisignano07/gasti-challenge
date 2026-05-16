@@ -2,14 +2,12 @@ import { CategoryIcon } from '@/shared/icons/category-icon';
 import { Num } from '@/shared/ui/num';
 import { formatTransactionDate } from '@/transactions/providers/date-formatter';
 import type { Transaction } from '@/transactions/domain/transaction';
-import type { Locale } from '@/shared/i18n/locale';
 
 type TransactionRowProps = {
   transaction: Transaction;
-  locale?: Locale;
 };
 
-export function TransactionRow({ transaction, locale = 'es' }: TransactionRowProps) {
+export function TransactionRow({ transaction }: TransactionRowProps) {
   const { amount, category, merchant, date } = transaction;
 
   return (
@@ -21,7 +19,7 @@ export function TransactionRow({ transaction, locale = 'es' }: TransactionRowPro
       <div className="flex-1 min-w-0">
         <div className="truncate font-display text-[15px] font-semibold text-ink-1">{merchant}</div>
         <div className="font-display text-[12px] font-medium tracking-label text-ink-3">
-          {formatTransactionDate(date, locale)}
+          {formatTransactionDate(date)}
         </div>
       </div>
 

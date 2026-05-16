@@ -8,21 +8,15 @@ type ComposerState = 'idle' | 'thinking' | 'disabled';
 type ComposerProps = {
   onSubmit: (text: string) => void;
   state?: ComposerState;
-  placeholderEs?: string;
-  placeholderEn?: string;
-  locale?: 'es' | 'en';
+  placeholder?: string;
 };
 
 export function Composer({
   onSubmit,
   state = 'idle',
-  placeholderEs = 'Pregúntame lo que quieras',
-  placeholderEn = 'Ask me anything',
-  locale = 'es',
+  placeholder = 'Pregúntame lo que quieras',
 }: ComposerProps) {
   const [value, setValue] = useState('');
-  const idlePlaceholder = locale === 'en' ? placeholderEn : placeholderEs;
-  const thinkingPlaceholder = locale === 'en' ? 'Thinking…' : 'Buscando…';
 
   const handleSubmit = useCallback(
     (e?: FormEvent) => {
@@ -43,7 +37,7 @@ export function Composer({
     }
   };
 
-  const placeholder = state === 'thinking' ? thinkingPlaceholder : idlePlaceholder;
+  const activePlaceholder = state === 'thinking' ? 'Buscando…' : placeholder;
   const disabled = state !== 'idle';
   const canSubmit = state === 'idle' && value.trim().length > 0;
 
@@ -62,9 +56,9 @@ export function Composer({
         value={value}
         onChange={(e) => setValue(e.target.value)}
         onKeyDown={handleKeyDown}
-        placeholder={placeholder}
+        placeholder={activePlaceholder}
         disabled={disabled}
-        aria-label={locale === 'en' ? 'Message Gasti' : 'Mensaje para Gasti'}
+        aria-label="Mensaje para Gasti"
         className={[
           'flex-1 resize-none bg-transparent outline-none',
           'font-display text-[15px] leading-[1.5] text-ink-1 placeholder:text-ink-4',
@@ -74,7 +68,7 @@ export function Composer({
       <button
         type="submit"
         disabled={!canSubmit}
-        aria-label={locale === 'en' ? 'Send' : 'Enviar'}
+        aria-label="Enviar"
         className={[
           'flex h-9 w-9 items-center justify-center rounded-pill',
           'text-white shadow-brand-glow [background:var(--brand-grad)]',

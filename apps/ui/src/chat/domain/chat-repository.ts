@@ -1,5 +1,5 @@
 import type { Conversation } from '@/chat/domain/conversation';
-import type { GastiMessage, Locale, Message, ToolCall } from '@/chat/domain/message';
+import type { GastiMessage, Message, ToolCall } from '@/chat/domain/message';
 
 export type ReplyEvent =
   | { kind: 'thinking' }
@@ -9,6 +9,6 @@ export type ReplyEvent =
 
 export interface ChatRepository {
   loadInitial(): Promise<Conversation>;
-  reply(input: { text: string; locale: Locale; history: Message[] }): AsyncIterable<ReplyEvent>;
+  reply(input: { text: string; history: Message[] }): AsyncIterable<ReplyEvent>;
   confirmOption(input: { optionId: string; history: Message[] }): AsyncIterable<ReplyEvent>;
 }

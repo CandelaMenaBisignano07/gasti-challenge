@@ -7,7 +7,7 @@ type UserMessageProps = {
 };
 
 export function UserMessage({ message }: UserMessageProps) {
-  const label = message.locale === 'en' ? 'You' : 'Vos';
+  const label = 'Vos';
   return (
     <article aria-label={label} className="flex w-full justify-end">
       <div className="flex max-w-[480px] flex-col items-end gap-s2">

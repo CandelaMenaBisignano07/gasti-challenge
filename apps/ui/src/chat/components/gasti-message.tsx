@@ -16,7 +16,7 @@ export function GastiMessage({ message }: GastiMessageProps) {
           {message.text}
         </p>
         {message.attachments && message.attachments.length > 0 && (
-          <MessageAttachments attachments={message.attachments} locale={message.locale} />
+          <MessageAttachments attachments={message.attachments} />
         )}
         {message.toolCalls && message.toolCalls.length > 0 && <ToolCallTrace calls={message.toolCalls} />}
       </div>

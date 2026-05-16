@@ -6,10 +6,10 @@ import type { BudgetProgress } from '@/budgets/domain/budget-progress';
 
 type BudgetProgressCardProps = {
   progress: BudgetProgress;
-  captionEs?: string; // e.g. "Proyectado: $58.000 a fin de mes"
+  caption?: string; // e.g. "Proyectado: $58.000 a fin de mes"
 };
 
-export function BudgetProgressCard({ progress, captionEs }: BudgetProgressCardProps) {
+export function BudgetProgressCard({ progress, caption }: BudgetProgressCardProps) {
   const tone = resolveBudgetTone(progress);
   const fraction = resolveBudgetFraction(progress);
   const label = progress.category.charAt(0).toUpperCase() + progress.category.slice(1);
@@ -27,9 +27,9 @@ export function BudgetProgressCard({ progress, captionEs }: BudgetProgressCardPr
       <div className="mt-s3">
         <BarMeter value={fraction} tone={tone} ariaLabel={`Progreso de ${label}`} />
       </div>
-      {captionEs && (
+      {caption && (
         <div className="mt-s2 font-display text-[12px] font-medium tracking-label text-ink-3">
-          {captionEs}
+          {caption}
         </div>
       )}
     </Card>

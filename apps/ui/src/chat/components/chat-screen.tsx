@@ -11,9 +11,6 @@ export function ChatScreen() {
   const { messages, status, sendMessage } = useChat();
   const isEmpty = messages.length === 0;
   const composerState = status === 'thinking' ? 'thinking' : 'idle';
-  const locale = messages.length > 0
-    ? messages[messages.length - 1].locale
-    : (typeof navigator !== 'undefined' && navigator.language.startsWith('en') ? 'en' : 'es');
 
   return (
     <>
@@ -35,7 +32,6 @@ export function ChatScreen() {
               <Composer
                 onSubmit={(text) => void sendMessage(text)}
                 state={composerState}
-                locale={locale}
               />
             </div>
           </div>
