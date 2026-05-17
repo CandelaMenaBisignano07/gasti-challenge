@@ -9,9 +9,11 @@ export class ZodValidationPipe<T> implements PipeTransform {
   transform(value: unknown): T {
     const result = this.schema.safeParse(value);
     if (!result.success) {
-      const issue = result.error.issues[0];
-      const path = issue?.path.join('.') || 'body';
-      throw new DomainError('VALIDATION_ERROR', `${path}: ${issue?.message ?? 'invalid input'}`);
+      const message =
+        result.error.issues
+          .map((issue) => `${issue.path.join('.') || 'body'}: ${issue.message}`)
+          .join('; ') || 'invalid input';
+      throw new DomainError('VALIDATION_ERROR', message);
     }
     return result.data;
   }
