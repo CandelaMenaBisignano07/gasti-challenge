@@ -11,14 +11,14 @@
 
 ### Goal
 
-Build the conversational **Gasti agent** in `apps/ai`: a single Mastra `Agent` that, through 24 thin tools over a defined `apps/api` HTTP contract, delivers PRODUCT.md's value moments — ad-hoc spending Q&A, proactive insights, budget coaching — plus savings-goal coaching (a PRODUCT.md amendment, §2) and the cross-cutting capabilities: income, categorization overrides, transaction CRUD. Bilingual, grounded in tool calls, with every tool call visible.
+Build the conversational **Gasti agent** in `apps/ai`: a single Mastra `Agent` that, through 24 thin tools over a defined `apps/api` HTTP contract, delivers PRODUCT.md's value moments — ad-hoc spending Q&A, proactive insights, budget coaching — plus savings-goal coaching (a PRODUCT.md amendment, §2) and the cross-cutting capabilities: income, categorization overrides, transaction CRUD. Spanish replies, grounded in tool calls, with every tool call visible.
 
 ### Success criteria — the spec is done when:
 
 1. The Gasti agent is registered in the Mastra registry and reachable over Mastra's built-in server.
 2. Every PRODUCT.md user story 1–35 is reachable through agent + tool behavior, plus savings-goal coaching and the proactive goal-risk warning.
 3. All 24 tools are wired by DI factories to their gateways; no tool imports a concrete gateway.
-4. Bilingual reply, es-AR currency formatting, dynamic `today`, grounding (no fabricated numbers), and confirmation-gated deletes/edits all hold.
+4. Spanish-only reply, es-AR currency formatting, dynamic `today`, grounding (no fabricated numbers), and confirmation-gated deletes/edits all hold.
 5. The UI's `HttpChatRepository` can replace `MockChatRepository` with no component changes — `ReplyEvent`s derive from Mastra's native stream.
 6. `bun dev --filter=ai` boots; `bun run build --filter=ai` is clean.
 
@@ -74,7 +74,7 @@ The proactive behavior is part of the amendment: when the user has an active sav
 `agent/gasti-agent.ts` exports a factory `makeGastiAgent({ tools, memory })`:
 
 - `Agent` from `@mastra/core/agent`; `id: 'gasti'`, `name: 'Gasti'`.
-- `model`: `@ai-sdk/openai` → `openai('gpt-4o')`. The scaffold's existing `@ai-sdk/openai` dependency stays; `gpt-4o` is capable enough for 24-tool selection and bilingual reasoning.
+- `model`: the string `'openai/gpt-4o'`, resolved by Mastra's built-in model router (reads `OPENAI_API_KEY`). No `@ai-sdk/*` dependency — the router model is AI SDK v5-compatible, which `Agent.generate()` requires. `gpt-4o` is capable enough for 24-tool selection.
 - `tools`: all 24 tools, wired by the composition root. Map keys are camelCase (they become the `toolName` in Mastra's stream — see §7).
 - `memory`: **injected** — the factory receives the `Memory` instance built in the parallel memory worktree. This spec attaches it and defines the contract (§8); it does not implement it. If the memory module is not yet merged, `memory` is `undefined` and the agent still boots (no recall, but functional) — graceful degradation.
 - `instructions`: **dynamic** — an `async ({ requestContext }) => string` so the current date is fresh every turn.
@@ -82,14 +82,13 @@ The proactive behavior is part of the amendment: when the user has an active sav
 
 ```ts
 import { Agent } from '@mastra/core/agent';
-import { openai } from '@ai-sdk/openai';
 import { buildInstructions } from './instructions';
 
 export function makeGastiAgent({ tools, memory }: GastiAgentDeps) {
   return new Agent({
     id: 'gasti',
     name: 'Gasti',
-    model: openai('gpt-4o'),
+    model: 'openai/gpt-4o',
     instructions: async ({ requestContext }) => buildInstructions(requestContext),
     tools,
     memory,
@@ -111,14 +110,14 @@ Threads map to conversations (`threadId`); `resourceId = userId`.
 `buildInstructions(requestContext)` returns the system prompt, interpolating `today`. Nine rules:
 
 1. **Voice** — neutral, informative, concise. No first-person product voice ("I'm Gasti", "Let me check"), no exclamation marks, no self-naming greetings. Light Argentine register in Spanish (`vos`, `tenés`) allowed, not forced.
-2. **Bilingual** — detect the user's language each turn, reply in that same language, never mix languages in one response.
-3. **Currency** — always es-AR (`$1.234,56`), negatives `−$1.234,56` (proper minus U+2212), deltas signed (`+12,5%`) — regardless of reply language.
+2. **Language** — always reply in Spanish (Argentine register). The agent understands input in any language (including English) but never answers in another language.
+3. **Currency** — always es-AR (`$1.234,56`), negatives `−$1.234,56` (proper minus U+2212), deltas signed (`+12,5%`).
 4. **Today** — `{today}` is interpolated in; resolve "este mes / últimos 30 días / hoy" against it, never hardcode a date.
 5. **Grounding** — never invent a number. Every total, breakdown, comparison, or lookup comes from a tool call. On empty results, unknown merchant, ambiguity, or thin data: say so plainly, do not fabricate.
 6. **Mutations** — for delete/edit, never call the destructive tool directly; first call `proposeTransactionMutation` (read-only) to identify the target and raise a confirmation, then act only on the user's pill choice.
 7. **Proactive insights** — when relevant (a spending question late in the month, a category near or over budget), volunteer *one* projection / recurring-charge / spike insight. Concise, never preachy.
 8. **Proactive goal-risk** — when the user has an active savings goal and `assessGoalRisk` reports `watch` or `high`, occasionally — not every turn, never nagging — note that the recent discretionary-spending pattern may delay the goal. Neutral and non-judgmental; never moralize about specific purchases.
-9. **Working-memory sync** — after a successful `setBudget` / `clearBudget` / `setGoal` / `clearGoal` / `declareIncome`, and when the user states a preference (display name, language), keep the working-memory mirror fresh via Mastra's built-in `updateWorkingMemory` tool.
+9. **Working-memory sync** — after a successful `setBudget` / `clearBudget` / `setGoal` / `clearGoal` / `declareIncome`, and when the user states a preference (display name), keep the working-memory mirror fresh via Mastra's built-in `updateWorkingMemory` tool.
 
 Rules 7 and 8 are rate-limited by instruction: the agent checks `lastMessages` and will not repeat the same proactive warning within a short window.
 
@@ -325,7 +324,7 @@ The "both" decision: the `apps/api` DB is the source of truth; working memory ho
 
 | Mirror | Why it is in working memory |
 |---|---|
-| `userProfile` — display name, language hint | Addressed correctly; per-user, always relevant |
+| `userProfile` — display name | Addressed correctly; per-user, always relevant |
 | `budgets` — active `{category, amount}` this month | Proactive overrun warnings without a tool call every turn |
 | `goals` — active `{id, name, targetAmount, targetDate}` | Proactive goal-risk warnings (rule 8) need to know a goal exists |
 | `income` — declared recurring monthly figure | Framing spend against income |
@@ -338,7 +337,7 @@ The "both" decision: the `apps/api` DB is the source of truth; working memory ho
 
 ### Two error classes
 
-**Transport failures** — `apps/api` unreachable, 5xx, timeout. The `apiClient` retries **once** (short backoff) on network error / 5xx; if it still fails, the gateway throws `ApiError` and the tool returns a structured `{ error: true, code, message }`. The agent, per the grounding rule, tells the user plainly it could not reach their data **in their language**, and never fabricates a number.
+**Transport failures** — `apps/api` unreachable, 5xx, timeout. The `apiClient` retries **once** (short backoff) on network error / 5xx; if it still fails, the gateway throws `ApiError` and the tool returns a structured `{ error: true, code, message }`. The agent, per the grounding rule, tells the user plainly it could not reach their data **in Spanish**, and never fabricates a number.
 
 **Domain outcomes** — expected results, not failures; `apps/api` returns them in the error envelope and the agent narrates them honestly:
 
@@ -357,7 +356,7 @@ The "both" decision: the `apps/api` DB is the source of truth; working memory ho
 | Ambiguous question (category, missing year) | Agent asks a clarifying question rather than guessing |
 | `proposeTransactionMutation` → 0 matches | Agent says it could not find it; no pills |
 | User never confirms a pending delete | Mutation lapses silently; no tool call. The confirm option id encodes `delete:<txId>` so a later confirm still targets the right row |
-| Language switches mid-conversation | Agent follows the latest turn's language |
+| User writes in English (or another language) | Agent understands it and still replies in Spanish |
 | Stale seed → near-empty "este mes" | Agent reports thin data honestly; `projectMonthEnd` returns its small-sample `caveat`. Reshaping the seed is an `apps/api` / candidate decision, out of scope here |
 | `requestContext` missing `today` / `userId` | The agent's `requestContextSchema` (Mastra primitive) throws before the LLM call — defensive; should never happen since middleware sets them |
 | Proactive insight repetition | Agent checks `lastMessages` and will not repeat the same projection / spike / goal-risk warning within a short window |
@@ -374,7 +373,7 @@ No tests are a deliverable (PRODUCT.md), so verification is a manual walkthrough
 
 1. `bun dev --filter=ai` boots `mastra dev`; the Gasti agent appears in Studio. `bun run build --filter=ai` is clean.
 2. All 24 tools are registered on the agent (visible in Studio's tool list).
-3. With `apps/api` down, ask "¿cuánto gasté en comida?" → the agent reports plainly that it cannot reach the data, in Spanish; ask in English → English. **Verifies** DI wiring, transport-error handling, grounding (no fabricated number), bilingual reply.
+3. With `apps/api` down, ask "¿cuánto gasté en comida?" → the agent reports plainly that it cannot reach the data, in Spanish; ask the same in English → still answers in Spanish. **Verifies** DI wiring, transport-error handling, grounding (no fabricated number), Spanish-only reply.
 
 ### Tier 2 — end-to-end (`apps/api` from the sibling spec running)
 
@@ -383,7 +382,7 @@ One scenario per capability:
 | # | Prompt | Verifies |
 |---|---|---|
 | 1 | "¿cuánto gasté en comida este mes?" | `sumSpendByCategory` call visible in trace, grounded answer, `$1.234,56` format |
-| 2 | "how much did I spend on food this month?" | English answer, same tool |
+| 2 | "how much did I spend on food this month?" | Spanish answer, same tool |
 | 3 | "¿en qué gasté más?" / "top 5 merchants" / "compará abril vs mayo" | `getSpendingBreakdown` / `getTopMerchants` / `compareSpending` |
 | 4 | "mostrame las transacciones de Rappi" | `listTransactions` → `transactionList` attachment payload |
 | 5 | "proyectá cómo termina el mes" | `projectMonthEnd` + small-sample caveat |
