@@ -13,6 +13,7 @@
       "dependsOn": ["build"],
       "cache": false,
       "persistent": true
-    }
+    },
+    "test": { "cache": false }
   }
 }
