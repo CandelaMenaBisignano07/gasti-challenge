@@ -21,7 +21,11 @@ export function addDays(iso: string, n: number): string {
 }
 
 export function addMonths(d: Date, n: number): Date {
-  return new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth() + n, d.getUTCDate()));
+  const year = d.getUTCFullYear();
+  const month = d.getUTCMonth() + n;
+  // Clamp the day so e.g. addMonths(May 31, -1) yields Apr 30, not May 1.
+  const maxDay = new Date(Date.UTC(year, month + 1, 0)).getUTCDate();
+  return new Date(Date.UTC(year, month, Math.min(d.getUTCDate(), maxDay)));
 }
 
 export function monthKey(d: Date): string {
