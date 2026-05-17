@@ -9,7 +9,9 @@ export interface ApiClient {
 }
 
 export function makeApiClient(
-  baseUrl: string = process.env.API_BASE_URL ?? DEFAULT_BASE_URL,
+  // `||` (not `??`) so an empty or whitespace-only API_BASE_URL also falls back —
+  // an unset env var reads as '' here, and `?? ` would not catch that.
+  baseUrl: string = process.env.API_BASE_URL?.trim() || DEFAULT_BASE_URL,
 ): ApiClient {
   async function attempt<TOut>(path: string, body: unknown, ctx: GatewayCtx): Promise<TOut> {
     const res = await fetch(`${baseUrl}${path}`, {
