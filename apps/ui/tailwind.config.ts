@@ -97,7 +97,7 @@ const config: Config = {
         'message-enter': 'message-enter 320ms var(--ease-spring) both',
         'sparkle-pulse': 'sparkle-pulse 1200ms var(--ease-spring) infinite',
         'thinking-dot':  'thinking-dot 1000ms var(--ease-in-out) infinite',
-        'mesh-drift':    'mesh-drift 28s var(--ease-in-out) infinite',
+        'mesh-drift':    'mesh-drift 22s var(--ease-in-out) infinite',
       },
       backdropBlur: {
         1: '8px',
