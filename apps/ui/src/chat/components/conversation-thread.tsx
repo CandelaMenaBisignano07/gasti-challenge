@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef } from 'react';
+import { useEffect } from 'react';
 import { UserMessage } from '@/chat/components/user-message';
 import { GastiMessage } from '@/chat/components/gasti-message';
 import { ThinkingIndicator } from '@/chat/components/thinking-indicator';
@@ -12,10 +12,16 @@ type ConversationThreadProps = {
 };
 
 export function ConversationThread({ messages, pending = false }: ConversationThreadProps) {
-  const bottomRef = useRef<HTMLDivElement>(null);
-
+  // Keep the view pinned to the bottom of the history whenever it grows.
   useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' });
+    const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const id = requestAnimationFrame(() => {
+      window.scrollTo({
+        top: document.documentElement.scrollHeight,
+        behavior: reduced ? 'auto' : 'smooth',
+      });
+    });
+    return () => cancelAnimationFrame(id);
   }, [messages.length, pending]);
 
   return (
@@ -33,7 +39,6 @@ export function ConversationThread({ messages, pending = false }: ConversationTh
         ),
       )}
       {pending && <ThinkingIndicator />}
-      <div ref={bottomRef} aria-hidden="true" />
     </div>
   );
 }
