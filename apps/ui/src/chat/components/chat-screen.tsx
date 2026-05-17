@@ -18,7 +18,7 @@ export function ChatScreen() {
       <div className="relative flex min-h-screen flex-col">
         <Header variant={isEmpty ? 'frosted' : 'solid'} />
 
-        <main className="flex-1 mx-auto w-full max-w-[720px] px-s4 sm:px-s6 lg:px-s7 pb-[140px]">
+        <main className="flex-1 mx-auto w-full max-w-[720px] px-s4 sm:px-s6 lg:px-s7 pb-[100px]">
           {isEmpty ? (
             <LandingHero />
           ) : (
@@ -26,7 +26,14 @@ export function ChatScreen() {
           )}
         </main>
 
-        <div className="pointer-events-none fixed inset-x-0 bottom-0 z-10">
+        <div
+          className={[
+            'pointer-events-none fixed inset-x-0 bottom-0 z-10 pt-s8',
+            isEmpty ? '' : 'bg-gradient-to-t from-surface-1 via-surface-1 to-transparent',
+          ]
+            .filter(Boolean)
+            .join(' ')}
+        >
           <div className="mx-auto w-full max-w-[720px] px-s4 sm:px-s6 lg:px-s7 pb-s5">
             <div className="pointer-events-auto">
               <Composer
