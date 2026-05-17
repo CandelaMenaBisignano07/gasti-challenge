@@ -136,7 +136,7 @@ A Zod discriminated union, resolved against `today` by `apps/api`:
 type Period =
   | { kind: 'currentMonth' }
   | { kind: 'lastNDays'; n: number }
-  | { kind: 'calendarMonth'; month: string }          // 'yyyy-MM'
+  | { kind: 'month'; month: string }                  // 'yyyy-MM'
   | { kind: 'customRange'; from: string; to: string }; // ISO 'yyyy-MM-dd'
 ```
 
