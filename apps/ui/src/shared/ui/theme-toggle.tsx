@@ -1,36 +1,19 @@
 'use client';
 
-import { Monitor, Moon, Sun } from 'lucide-react';
-import { useTheme, type ThemePreference } from '@/shared/theme/theme-provider';
-
-const NEXT: Record<ThemePreference, ThemePreference> = {
-  system: 'light',
-  light: 'dark',
-  dark: 'system',
-};
-
-const ICON: Record<ThemePreference, typeof Monitor> = {
-  system: Monitor,
-  light: Sun,
-  dark: Moon,
-};
-
-const LABEL_ES: Record<ThemePreference, string> = {
-  system: 'Tema: sistema',
-  light: 'Tema: claro',
-  dark: 'Tema: oscuro',
-};
+import { Moon, Sun } from 'lucide-react';
+import { useTheme } from '@/shared/theme/theme-provider';
 
 export function ThemeToggle() {
-  const { preference, setPreference } = useTheme();
-  const Icon = ICON[preference];
+  const { preference, toggle } = useTheme();
+  const isDark = preference === 'dark';
+  const Icon = isDark ? Sun : Moon;
 
   return (
     <button
       type="button"
-      onClick={() => setPreference(NEXT[preference])}
-      aria-label={LABEL_ES[preference]}
-      aria-pressed={preference !== 'system'}
+      onClick={toggle}
+      aria-label={isDark ? 'Cambiar a tema claro' : 'Cambiar a tema oscuro'}
+      aria-pressed={isDark}
       className={[
         'inline-flex h-11 w-11 items-center justify-center rounded-pill',
         'text-ink-2 transition-transform duration-fast ease-out active:scale-[0.985]',
