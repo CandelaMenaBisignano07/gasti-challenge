@@ -1,7 +1,7 @@
 # Design — Proactive Mercado Pago prompts
 
-**Status:** Design approved, ready for implementation plan.
-**Date:** 2026-05-14
+**Status:** Design approved. Revised 2026-05-18 to match merged `main`.
+**Date:** 2026-05-14 · **Revised:** 2026-05-18 (storage decision: JSON not libsql; file locations realigned to the built codebase — see §6, §9, §14)
 **Companion docs:** [PRODUCT.md](../../../PRODUCT.md), [DESIGN.md](../../../DESIGN.md), [CLAUDE.md](../../../CLAUDE.md)
 
 ---
@@ -242,15 +242,13 @@ export interface PaymentClassifier {
 }
 
 // apps/api/proactive/domain/pending-prompts.repository.ts
+// Revised 2026-05-18: JSON-backed, no DB transaction handle.
 export interface PendingPromptsRepository {
-  create(p: Omit<PendingPrompt,
-    'resolvedTransactionId' | 'resolvedAt'>,
-    trx?: Database
-  ): Promise<PendingPrompt>;
+  create(p: Omit<PendingPrompt, 'resolvedTransactionId' | 'resolvedAt'>): Promise<PendingPrompt>;
   findByMpPaymentId(userId: string, mpPaymentId: string): Promise<PendingPrompt | null>;
   listPending(userId: string): Promise<PendingPrompt[]>;
   getById(userId: string, id: string): Promise<PendingPrompt | null>;
-  markAdded(id: string, txId: string, trx?: Database): Promise<void>;
+  markAdded(id: string, txId: string): Promise<void>;
   markDiscarded(id: string, reason?: 'mp_refund' | 'mp_chargeback'): Promise<void>;
 }
 
@@ -261,11 +259,17 @@ export interface ProactiveEventBus {
 }
 
 // apps/api/transactions/domain/transactions.repository.ts
+// Revised 2026-05-18: the MP feature ADDS these three methods to the EXISTING
+// TransactionsRepository (which already has all/add/update/delete/nextId).
+// No DB transaction handle — atomicity within a single JSON file is the
+// read-modify-write window; cross-file consistency is not required because
+// AddTransaction (transactions.json) and markAdded (pending-prompts.json) are
+// ordered and individually idempotent.
 export interface TransactionsRepository {
-  create(input: Omit<Transaction, 'statusChangedAt'>, trx?: Database): Promise<Transaction>;
-  getById(userId: string, id: string): Promise<Transaction>;
+  // ...existing: all, add, update, delete, nextId
+  getById(userId: string, id: string): Promise<Transaction | null>;
   findByMpPaymentId(userId: string, mpPaymentId: string): Promise<Transaction | null>;
-  updateStatus(id: string, newStatus: TransactionStatus, at: Date, trx?: Database): Promise<void>;
+  updateStatus(id: string, newStatus: TransactionStatus, at: Date): Promise<void>;
 }
 ```
 
@@ -418,68 +422,33 @@ Reconnect after drop:
 
 ---
 
-## 6. Storage — libsql
+## 6. Storage — JSON files
 
-`apps/api` persists everything in a single libsql database at `apps/api/data/gasti.db`, accessed via `@libsql/client` (`createClient({ url: 'file:apps/api/data/gasti.db' })`). PRODUCT.md already nominates `@mastra/libsql` for Mastra's memory adapter in `apps/ai`; using `@libsql/client` in `apps/api` keeps both workspaces on the same SQL dialect and the same on-disk format. The schema below is plain SQLite-compatible DDL; libsql executes it verbatim.
+> **Revised 2026-05-18.** The original spec committed `apps/api` to libsql. By the time this feature is built, `apps/api` already exists on `main` as a plain NestJS app whose every feature (transactions, budgets, goals, income, categorization) is JSON-backed via `createJsonStore` with a passing `bun:test` suite. Introducing libsql would mean a second storage backend or rewriting five features. **Decision: the MP feature persists to JSON files, consistent with the existing `apps/api`.** libsql stays where it already is — Mastra's memory adapter inside `apps/ai` — untouched by this feature.
 
-Migrations run on app boot via a small idempotent `runMigrations(client)` helper that issues each `create table if not exists` / `create index if not exists` statement in order.
+`apps/api` already persists every feature through a file-backed JSON store: `createJsonStore<T>(filePath, fallback)` in `src/shared/providers/json-store.ts` does atomic `.tmp`-then-rename writes, and `read()` returns a deep clone of `fallback` when the file is absent. The MP feature follows that exact convention.
 
-```sql
-create table users (
-  id                       text primary key,
-  display_name             text,
-  language_pref            text,
-  mp_user_id               text unique,
-  mp_access_token_enc      blob, mp_access_token_iv  blob, mp_access_token_tag  blob,
-  mp_refresh_token_enc     blob, mp_refresh_token_iv blob, mp_refresh_token_tag blob,
-  mp_token_expires_at      text,
-  mp_scope                 text,
-  mp_live_mode             integer,
-  mp_connected_at          text,
-  created_at               text not null
-);
+Two new JSON files under `API_DATA_DIR` (defaults to `apps/api/data/`, already gitignored), each owned by one `@Injectable()` repository that mirrors `json-budgets.repository.ts` (read-modify-write for mutations):
 
-create table pending_prompts (
-  id                       text primary key,
-  user_id                  text not null references users(id),
-  mp_payment_id            text not null,
-  kind                     text not null check (kind in ('income','expense')),
-  amount                   real not null,
-  merchant                 text,
-  payment_date             text not null,
-  suggested_category       text not null,
-  suggested_description    text not null,
-  confidence               real not null,
-  intent                   text not null check (intent in ('confirm','notice')),
-  notice_reason            text check (notice_reason in ('mp_refund','mp_chargeback') or notice_reason is null),
-  status                   text not null check (status in ('pending','added','discarded','auto')),
-  resolved_transaction_id  text,
-  created_at               text not null,
-  resolved_at              text
-);
-create unique index idx_pending_mp_payment on pending_prompts (user_id, mp_payment_id);
-create index idx_pending_status on pending_prompts (user_id, status, created_at);
+- `users.json` — `User[]`. `JsonUsersRepository` returns `[default-user]` as the fallback, so the seed is implicit (no migration script).
+- `pending-prompts.json` — `PendingPrompt[]`.
 
-create table transactions (
-  id                       text primary key,
-  user_id                  text not null references users(id),
-  date                     text not null,
-  amount                   real not null,
-  currency                 text not null default 'ARS',
-  category                 text not null,
-  description              text not null,
-  merchant                 text not null,
-  direction                text not null default 'expense' check (direction in ('expense','income')),
-  status                   text not null default 'active'  check (status in ('active','refunded','charged_back')),
-  status_changed_at        text,
-  source                   text not null default 'manual'  check (source in ('manual','mp_webhook')),
-  mp_payment_id            text
-);
-create unique index idx_tx_mp_payment_id
-  on transactions(user_id, mp_payment_id) where mp_payment_id is not null;
-```
+The existing transactions store (`data/transactions.json`) gains the MP fields in place.
 
-**Seed migration:** on first boot, if `users` is empty → insert `default-user`. If `transactions` is empty → hydrate from `data/transactions.json` with `user_id='default-user'`, `direction='expense'`, `status='active'`, `source='manual'`.
+**Concurrency / idempotency.** JSON has no unique index. Idempotency (duplicate MP webhooks, MP retries) is enforced in the use-case layer: `ProcessMpEvent` calls `findByMpPaymentId` on both the transactions and pending-prompts repositories before any insert and drops on a hit. Webhook events are processed one at a time per request, so the read-modify-write window is small and single-user dev traffic never races. A `:reversal` suffix on a reversal prompt's `mpPaymentId` keeps it from matching the original confirm prompt during dedupe.
+
+**Transactions extension.** `src/shared/domain/transaction.ts` `transactionSchema` gains six fields, each declared with a Zod `.default(...)` so existing call sites and the existing dataset stay valid:
+
+| field | type | default |
+|---|---|---|
+| `userId` | `string` | `'default-user'` |
+| `direction` | `'expense' \| 'income'` | `'expense'` |
+| `status` | `'active' \| 'refunded' \| 'charged_back'` | `'active'` |
+| `statusChangedAt` | `string \| null` (ISO) | `null` |
+| `source` | `'manual' \| 'mp_webhook'` | `'manual'` |
+| `mpPaymentId` | `string \| null` | `null` |
+
+`JsonTransactionsRepository` parses every row through `transactionSchema` on read, so the existing `data/transactions.json` (which lacks the new fields) is upgraded transparently in memory — no migration script, no rewrite of the seed file. Only `add.use-case.ts` and `src/shared/testing/fakes.ts` *construct* a `Transaction`; every other consumer only reads, and extra fields don't break readers.
 
 ---
 
@@ -602,11 +571,11 @@ Notice cards never trigger a follow-up Gasti turn — the card IS the agent spea
 
 ### Token storage — AES-256-GCM at rest
 
-`TOKEN_ENCRYPTION_KEY` (32-byte base64) in `apps/api/.env`. `TokenCipher` provider in `apps/api/shared/security/` wraps Node's `crypto.createCipheriv('aes-256-gcm', ...)`. `UsersRepository`:
-- on write: encrypt access + refresh tokens, persist IV + auth tag alongside ciphertext
+`TOKEN_ENCRYPTION_KEY` (32-byte base64) in `apps/api/.env`. `TokenCipher` provider in `apps/api/src/shared/security/` wraps Node's `crypto.createCipheriv('aes-256-gcm', ...)`. `JsonUsersRepository`:
+- on write: encrypt access + refresh tokens; store ciphertext, IV and auth tag as base64 strings in `users.json` (the encrypted-token shape is an internal `UserRow` type the repository maps to/from the decrypted `User`)
 - on read: decrypt and return decoded strings on the `User` value object
 
-Use-cases never see ciphertext. Key absent at boot → API refuses to start. Key changed between runs → existing rows fail to decrypt; boot logs a clear mismatch warning; all users effectively treated as disconnected until they re-connect.
+Use-cases never see ciphertext. Key absent at boot → API refuses to start. Key changed between runs → existing rows fail to decrypt; the repository catches the decrypt error, logs a clear mismatch warning, and treats that user as disconnected (tokens read as `null`) until they re-connect.
 
 ### Token refresh
 
@@ -751,12 +720,14 @@ A reviewer should walk this script top to bottom. This is the deliverable check.
 
 ## 14. Locations summary (Clean Architecture)
 
+> **Revised 2026-05-18** to match the merged `apps/api`/`apps/ai`/`apps/ui` on `main`: JSON repositories (not `sqlite-*`), the classifier as `apps/ai`'s first Mastra workflow under a top-level feature folder, and UI surfaces inside the existing `apps/ui/src/` feature-folder layout.
+
 ```
 apps/api/src/
 ├── users/
 │   ├── domain/{user.ts, users.repository.ts}
 │   ├── use-cases/{link-mp-account.ts, refresh-mp-token.ts, get-current-user.ts}
-│   ├── repositories/sqlite-users.repository.ts
+│   ├── repositories/json-users.repository.ts
 │   ├── providers/current-user.provider.ts
 │   └── users.module.ts
 ├── mp/
@@ -765,41 +736,45 @@ apps/api/src/
 │   ├── use-cases/{process-mp-event.ts, start-mp-connect.ts, complete-mp-connect.ts}
 │   ├── providers/{mercado-pago.provider.ts, http-payment-classifier.ts,
 │   │              mp-signature-verifier.ts}
-│   ├── interface/{mp-webhook.controller.ts, mp-oauth.controller.ts, mp-webhook.dto.ts}
+│   ├── interface/{mp-webhook.controller.ts, mp-oauth.controller.ts,
+│   │              mp-webhook.dto.ts, mp.schemas.ts}
 │   └── mp.module.ts
 ├── proactive/
 │   ├── domain/{pending-prompt.ts, pending-prompts.repository.ts, proactive-event-bus.ts}
 │   ├── use-cases/{resolve-proactive-prompt.ts, list-pending-prompts.ts}
-│   ├── repositories/sqlite-pending-prompts.repository.ts
+│   ├── repositories/json-pending-prompts.repository.ts
 │   ├── providers/in-memory-proactive-event-bus.ts
-│   ├── interface/proactive.controller.ts
+│   ├── interface/{proactive.controller.ts, proactive.schemas.ts}
 │   └── proactive.module.ts
-├── transactions/
-│   ├── domain/{transaction.ts, transactions.repository.ts}
-│   ├── use-cases/{add-transaction.ts, mark-transaction-reversed.ts}
-│   ├── repositories/sqlite-transactions.repository.ts
-│   └── transactions.module.ts
-└── shared/security/token-cipher.provider.ts
+├── transactions/                                  # EXISTING feature — extended
+│   ├── domain/transactions.repository.ts          # + getById/findByMpPaymentId/updateStatus
+│   ├── use-cases/{add.use-case.ts (extend), mark-transaction-reversed.use-case.ts (new)}
+│   └── repositories/json-transactions.repository.ts  # + normalize-on-read + new methods
+└── shared/
+    ├── domain/transaction.ts                      # EXISTING — extended with 6 MP fields
+    └── security/token-cipher.ts
 
-apps/ai/src/mastra/
-└── mp-classification/
-    ├── domain/{classification.ts}
-    ├── use-cases/{detect-payment-kind.ts, pick-category.ts, draft-description.ts}
-    └── workflows/classify-mp-event.ts            (Mastra Workflow primitive)
+apps/ai/src/
+├── mp-classification/                             # NEW top-level feature folder
+│   ├── domain/classification.ts                   # Zod input/output schemas
+│   └── workflows/classify-mp-event.workflow.ts    # Mastra createWorkflow + 3 createStep
+└── mastra/index.ts                                # register the workflow in `workflows: {}`
 
-apps/ui/
-├── components/composer/
-│   ├── Composer.tsx
-│   ├── ComposerChipRow.tsx
-│   └── chips/MercadoPagoChip.tsx
-├── components/proactive/
-│   ├── ProactivePromptCard.tsx
-│   ├── ProactiveNoticeCard.tsx
-│   └── index.ts
-├── features/proactive/
-│   ├── useProactivePrompts.ts
-│   └── useMpConnection.ts
-└── app/chat/page.tsx
+apps/ui/src/
+├── proactive/                                     # NEW feature folder
+│   ├── domain/{pending-prompt.ts, proactive-repository.ts}
+│   ├── repositories/http-proactive-repository.ts  # SSE stream + REST to apps/api
+│   ├── infrastructure/{proactive-context.tsx, use-proactive.ts}
+│   ├── use-cases/resolve-prompt.ts
+│   └── components/{proactive-prompt-card.tsx, proactive-notice-card.tsx}
+├── mp/                                            # NEW feature folder
+│   ├── domain/mp-connection.ts
+│   ├── repositories/http-mp-repository.ts
+│   ├── infrastructure/use-mp-connection.ts
+│   └── components/{mercado-pago-chip.tsx, mp-connection-popover.tsx}
+└── chat/components/
+    ├── composer.tsx                               # EXISTING — gains a chip row
+    └── conversation-thread.tsx                    # EXISTING — renders proactive cards inline
 ```
 
 ---
