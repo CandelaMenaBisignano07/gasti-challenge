@@ -22,6 +22,7 @@ export function ChatScreen() {
       setLandingMounted(true);
       return;
     }
+    // 480ms must stay in sync with the `duration-slow` class below (--dur-slow).
     const timer = setTimeout(() => setLandingMounted(false), 480);
     return () => clearTimeout(timer);
   }, [isLanding]);

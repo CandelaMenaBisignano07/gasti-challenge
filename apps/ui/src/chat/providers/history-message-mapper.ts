@@ -19,7 +19,7 @@ export type PersistedMessage = {
   id: string;
   role: string;
   createdAt?: string | number | Date;
-  content?: { parts?: PersistedPart[] } | string | null;
+  content?: { parts?: PersistedPart[]; content?: string } | string | null;
 };
 
 /** Normalizes any timestamp into an ISO string, falling back to now. */
@@ -40,12 +40,21 @@ function partsOf(content: PersistedMessage['content']): PersistedPart[] {
   return [];
 }
 
+/** The v2 plain-text fallback: a bare string content, or its `content` field. */
+function plainText(content: PersistedMessage['content']): string {
+  if (typeof content === 'string') return content;
+  if (content && typeof content === 'object' && typeof content.content === 'string') {
+    return content.content;
+  }
+  return '';
+}
+
 function mapUserMessage(m: PersistedMessage): UserMessage {
-  const text = partsOf(m.content)
+  const fromParts = partsOf(m.content)
     .filter((p) => p.type === 'text')
     .map((p) => p.text ?? '')
     .join('');
-  return { id: m.id, role: 'user', text, sentAt: toIso(m.createdAt) };
+  return { id: m.id, role: 'user', text: fromParts || plainText(m.content), sentAt: toIso(m.createdAt) };
 }
 
 function mapGastiMessage(m: PersistedMessage): GastiMessage {

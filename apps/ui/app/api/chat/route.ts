@@ -60,6 +60,11 @@ export async function POST(req: Request): Promise<Response> {
  * Restores a persisted thread. Returns the agent's stored conversation mapped to
  * the UI's rich `Message[]` shape. Never throws to the client — a missing thread
  * or any failure yields an empty conversation.
+ *
+ * Looked up by `threadId` alone: thread ids are globally unique, so `resourceId`
+ * is not needed to identify the thread (it scopes access, not identity, and this
+ * is a single-user app). `listMessages()` returns its default first page — very
+ * long threads beyond that page are not yet restored (see spec "Out of scope").
  */
 export async function GET(req: Request): Promise<Response> {
   const threadId = new URL(req.url).searchParams.get('threadId') ?? '';
