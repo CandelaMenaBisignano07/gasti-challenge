@@ -22,6 +22,16 @@ function asDisplayAttachment(result: unknown): MessageAttachment | null {
   return null;
 }
 
+/** Spanish caption stating how many transactions a category change will move. */
+function categoryChangeCaption(r: Record<string, unknown>): string {
+  const count = typeof r.affectedTransactionCount === 'number' ? r.affectedTransactionCount : 0;
+  if (count === 0) return 'Ninguna transacción será afectada.';
+  const noun = count === 1 ? 'transacción' : 'transacciones';
+  const verb = count === 1 ? 'pasará' : 'pasarán';
+  const target = str(r.intent) === 'rename' ? str(r.newName) : 'otros';
+  return `${count} ${noun} ${verb} a "${target}".`;
+}
+
 /**
  * Maps a tool's result output to a UI attachment. Mastra streams the raw tool
  * output (not the agent's `transform.display` payload), and the same raw output
@@ -60,6 +70,20 @@ export function toAttachment(toolName: string, result: unknown): MessageAttachme
         };
       }
       return matches.length ? { kind: 'transactionList', items: matches } : null;
+    }
+    case 'proposeCategoryChange': {
+      const intent = str(r.intent);
+      if (intent !== 'delete' && intent !== 'rename') return null;
+      const name = str(r.name);
+      const confirmLabel = intent === 'delete' ? 'Sí, borrala' : 'Sí, renombrala';
+      return {
+        kind: 'optionPills',
+        caption: categoryChangeCaption(r),
+        options: [
+          { id: `confirm:${intent}:${name}`, label: confirmLabel, intent: 'confirm' },
+          { id: 'cancel', label: 'Cancelar', intent: 'cancel' },
+        ],
+      };
     }
     default:
       return null;

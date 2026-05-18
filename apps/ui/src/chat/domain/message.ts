@@ -16,7 +16,7 @@ export type OptionPill = {
 export type MessageAttachment =
   | { kind: 'transactionList'; items: Transaction[] }
   | { kind: 'budgetProgress'; progress: BudgetProgress; caption?: string }
-  | { kind: 'optionPills'; options: OptionPill[]; resolved?: boolean };
+  | { kind: 'optionPills'; options: OptionPill[]; resolved?: boolean; caption?: string };
 
 export type UserMessage = {
   id: string;
