@@ -20,7 +20,7 @@ export class DeclareIncome {
   async execute(input: DeclareIncomeInput) {
     if (input.kind === 'recurring') {
       await this.repo.setRecurring(input.amount);
-      return { kind: 'recurring' as const, amount: input.amount };
+      return { kind: 'recurring' as const, amount: input.amount, date: null, description: null };
     }
     const entry = {
       amount: input.amount,

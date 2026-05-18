@@ -25,7 +25,12 @@ export class GetCashFlow {
     const periodDays = daysBetween(range.from, range.to) + 1;
 
     const stmt = await this.income.get();
-    const recurring = stmt.recurringMonthly ? (stmt.recurringMonthly * periodDays) / 30 : 0;
+    // A month-scoped period (currentMonth — even partway through — or a specific
+    // month) earns one full month of recurring income. Rolling and custom windows
+    // are prorated by their day length.
+    const monthScoped = input.period.kind === 'currentMonth' || input.period.kind === 'month';
+    const recurringMonthly = stmt.recurringMonthly ?? 0;
+    const recurring = monthScoped ? recurringMonthly : (recurringMonthly * periodDays) / 30;
     const oneOffs = stmt.oneOffs
       .filter((o) => o.date >= range.from && o.date <= range.to)
       .reduce((s, o) => s + o.amount, 0);
