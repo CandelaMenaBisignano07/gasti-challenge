@@ -8,6 +8,7 @@ import { InsightsModule } from './insights/insights.module';
 import { BudgetsModule } from './budgets/budgets.module';
 import { IncomeModule } from './income/income.module';
 import { GoalsModule } from './goals/goals.module';
+import { UsersModule } from './users/users.module';
 
 @Module({
   imports: [
@@ -19,6 +20,7 @@ import { GoalsModule } from './goals/goals.module';
     BudgetsModule,
     IncomeModule,
     GoalsModule,
+    UsersModule,
   ],
   controllers: [AppController],
 })
