@@ -20,12 +20,12 @@ interface UserRow {
   createdAt: string;
 }
 
-const seedRow: UserRow = {
+const seedRow: UserRow = Object.freeze({
   id: DEFAULT_USER_ID, displayName: null, languagePref: null, mpUserId: null,
   mpAccessTokenEnc: null, mpRefreshTokenEnc: null, mpTokenExpiresAt: null,
   mpScope: null, mpLiveMode: null, mpConnectedAt: null,
   createdAt: new Date('2026-05-01T00:00:00.000Z').toISOString(),
-};
+});
 
 @Injectable()
 export class JsonUsersRepository implements UsersRepository {
@@ -70,7 +70,9 @@ export class JsonUsersRepository implements UsersRepository {
 
   async getCurrent(): Promise<User> {
     const rows = await this.store.read();
-    return this.toUser(rows[0]);
+    const row = rows.find((r) => r.id === DEFAULT_USER_ID) ?? rows[0];
+    if (!row) throw new Error('no users present in the store');
+    return this.toUser(row);
   }
 
   async findByMpUserId(mpUserId: string): Promise<User | null> {

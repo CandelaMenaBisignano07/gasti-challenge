@@ -20,3 +20,13 @@ test('a tampered ciphertext fails to decrypt', () => {
 test('rejects a key that is not 32 bytes', () => {
   expect(() => createTokenCipher(Buffer.alloc(16).toString('base64'))).toThrow();
 });
+
+test('uses a fresh IV per encryption — same plaintext yields different ciphertext', () => {
+  const cipher = createTokenCipher(KEY);
+  const a = cipher.encrypt('same-plaintext');
+  const b = cipher.encrypt('same-plaintext');
+  expect(a.iv).not.toBe(b.iv);
+  expect(a.ciphertext).not.toBe(b.ciphertext);
+  expect(cipher.decrypt(a)).toBe('same-plaintext');
+  expect(cipher.decrypt(b)).toBe('same-plaintext');
+});
