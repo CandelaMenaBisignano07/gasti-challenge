@@ -24,7 +24,14 @@ export function MessageAttachments({ attachments }: MessageAttachmentsProps) {
         }
         if (a.kind === 'optionPills') {
           const options = a.options.map((o) => ({ ...o, disabled: a.resolved }));
-          return <OptionPillStack key={idx} options={options} onPick={(id) => void pickOption(id)} />;
+          return (
+            <OptionPillStack
+              key={idx}
+              options={options}
+              caption={a.caption}
+              onPick={(id) => void pickOption(id)}
+            />
+          );
         }
         return null;
       })}

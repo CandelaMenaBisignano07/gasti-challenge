@@ -11,32 +11,45 @@ type OptionPillStackProps = {
   options: Option[];
   onPick: (id: string) => void;
   label?: string;
+  caption?: string;
 };
 
-export function OptionPillStack({ options, onPick, label = 'Opciones' }: OptionPillStackProps) {
+export function OptionPillStack({
+  options,
+  onPick,
+  label = 'Opciones',
+  caption,
+}: OptionPillStackProps) {
   return (
-    <div role="group" aria-label={label} className="flex flex-col gap-s2">
-      {options.map((opt) => (
-        <button
-          key={opt.id}
-          type="button"
-          disabled={opt.disabled}
-          onClick={() => onPick(opt.id)}
-          style={{
-            transition:
-              'transform var(--dur-fast) var(--ease-out), opacity var(--dur-base) var(--ease-out)',
-          }}
-          className={[
-            'w-full rounded-md border border-line-1 bg-surface-tint',
-            'px-s4 py-s3 text-center font-display text-[14px] font-semibold text-ai-ink',
-            'active:scale-[0.985]',
-            'outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ai',
-            'disabled:opacity-30 disabled:pointer-events-none',
-          ].join(' ')}
-        >
-          {opt.label}
-        </button>
-      ))}
+    <div className="flex flex-col gap-s2">
+      {caption && (
+        <p className="font-display text-[12px] font-medium tracking-label text-ink-3">
+          {caption}
+        </p>
+      )}
+      <div role="group" aria-label={label} className="flex flex-col gap-s2">
+        {options.map((opt) => (
+          <button
+            key={opt.id}
+            type="button"
+            disabled={opt.disabled}
+            onClick={() => onPick(opt.id)}
+            style={{
+              transition:
+                'transform var(--dur-fast) var(--ease-out), opacity var(--dur-base) var(--ease-out)',
+            }}
+            className={[
+              'w-full rounded-md border border-line-1 bg-surface-tint',
+              'px-s4 py-s3 text-center font-display text-[14px] font-semibold text-ai-ink',
+              'active:scale-[0.985]',
+              'outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ai',
+              'disabled:opacity-30 disabled:pointer-events-none',
+            ].join(' ')}
+          >
+            {opt.label}
+          </button>
+        ))}
+      </div>
     </div>
   );
 }

@@ -7,6 +7,7 @@ import { CreateCategory } from './use-cases/create-category.use-case';
 import { RenameCategory } from './use-cases/rename-category.use-case';
 import { DeleteCategory } from './use-cases/delete-category.use-case';
 import { ListCategories } from './use-cases/list-categories.use-case';
+import { ProposeCategoryChange } from './use-cases/propose-category-change.use-case';
 import { CategorizationController } from './interface/categorization.controller';
 
 @Module({
@@ -19,6 +20,7 @@ import { CategorizationController } from './interface/categorization.controller'
     RenameCategory,
     DeleteCategory,
     ListCategories,
+    ProposeCategoryChange,
   ],
 })
 export class CategorizationModule {}

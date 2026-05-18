@@ -10,5 +10,6 @@ export function makeHttpCategorizationGateway(api: ApiClient): CategorizationGat
     rename: '/categorization/rename-category',
     remove: '/categorization/delete-category',
     list: '/categorization/list-categories',
+    propose: '/categorization/propose-category-change',
   });
 }

@@ -29,7 +29,7 @@ export function makeCategorizationTools(gateway: CategorizationGateway) {
     renameCategory: createGatewayTool({
       id: 'renameCategory',
       description:
-        'Rename a custom category. Existing transactions, overrides and budgets follow the rename. The seven default categories cannot be renamed.',
+        'Rename a custom category. Confirmation-gated: only call after proposeCategoryChange and an explicit user confirmation. Existing transactions, overrides and budgets follow the rename. The seven default categories cannot be renamed.',
       inputSchema: s.renameCategoryInput,
       outputSchema: s.renameCategoryResult,
       call: (i, c) => gateway.rename(i, c),
@@ -37,7 +37,7 @@ export function makeCategorizationTools(gateway: CategorizationGateway) {
     deleteCategory: createGatewayTool({
       id: 'deleteCategory',
       description:
-        'Delete a custom category. Everything assigned to it falls back to "otros" — state this plainly before calling. The seven default categories cannot be deleted.',
+        'Delete a custom category. Confirmation-gated: only call after proposeCategoryChange and an explicit user confirmation. Everything assigned to it falls back to "otros". The seven default categories cannot be deleted.',
       inputSchema: s.deleteCategoryInput,
       outputSchema: s.deleteCategoryResult,
       call: (i, c) => gateway.remove(i, c),
@@ -48,6 +48,14 @@ export function makeCategorizationTools(gateway: CategorizationGateway) {
       inputSchema: s.listCategoriesInput,
       outputSchema: s.listCategoriesResult,
       call: (i, c) => gateway.list(i, c),
+    }),
+    proposeCategoryChange: createGatewayTool({
+      id: 'proposeCategoryChange',
+      description:
+        'Read-only. MANDATORY first step for every custom-category delete or rename request — call it each time, even if you already know the affected-transaction count from earlier in the conversation. It renders the confirmation card the user acts on; skip it and there is no card. Returns the affected-transaction count. Never ask for delete/rename confirmation in plain text instead of calling this.',
+      inputSchema: s.proposeCategoryChangeInput,
+      outputSchema: s.proposeCategoryChangeResult,
+      call: (i, c) => gateway.propose(i, c),
     }),
   };
 }

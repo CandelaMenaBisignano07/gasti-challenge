@@ -13,10 +13,15 @@ import { RenameCategory, type RenameCategoryInput } from '../use-cases/rename-ca
 import { DeleteCategory, type DeleteCategoryInput } from '../use-cases/delete-category.use-case';
 import { ListCategories } from '../use-cases/list-categories.use-case';
 import {
+  ProposeCategoryChange,
+  type ProposeCategoryChangeInput,
+} from '../use-cases/propose-category-change.use-case';
+import {
   createCategoryInput,
   deleteCategoryInput,
   overrideMerchantInput,
   overrideTransactionInput,
+  proposeCategoryChangeInput,
   renameCategoryInput,
 } from './categorization.schemas';
 
@@ -29,6 +34,7 @@ export class CategorizationController {
     private readonly rename: RenameCategory,
     private readonly del: DeleteCategory,
     private readonly list: ListCategories,
+    private readonly propose: ProposeCategoryChange,
   ) {}
 
   @Post('merchant')
@@ -61,5 +67,12 @@ export class CategorizationController {
   @Post('list-categories')
   listCategories() {
     return this.list.execute();
+  }
+
+  @Post('propose-category-change')
+  proposeCategoryChange(
+    @Body(new ZodValidationPipe(proposeCategoryChangeInput)) body: ProposeCategoryChangeInput,
+  ) {
+    return this.propose.execute(body);
   }
 }

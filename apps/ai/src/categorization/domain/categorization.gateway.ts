@@ -30,6 +30,18 @@ export const listCategoriesResult = z.object({
   categories: z.array(z.object({ name: z.string(), isCustom: z.boolean() })),
 });
 
+export const proposeCategoryChangeInput = z.object({
+  intent: z.enum(['delete', 'rename']),
+  name: z.string().min(1),
+  newName: z.string().min(1).max(24).optional(),
+});
+export const proposeCategoryChangeResult = z.object({
+  intent: z.enum(['delete', 'rename']),
+  name: z.string(),
+  newName: z.string().optional(),
+  affectedTransactionCount: z.number(),
+});
+
 export type CreateCategoryInput = z.infer<typeof createCategoryInput>;
 export type CreateCategoryResult = z.infer<typeof createCategoryResult>;
 export type RenameCategoryInput = z.infer<typeof renameCategoryInput>;
@@ -38,6 +50,8 @@ export type DeleteCategoryInput = z.infer<typeof deleteCategoryInput>;
 export type DeleteCategoryResult = z.infer<typeof deleteCategoryResult>;
 export type ListCategoriesInput = z.infer<typeof listCategoriesInput>;
 export type ListCategoriesResult = z.infer<typeof listCategoriesResult>;
+export type ProposeCategoryChangeInput = z.infer<typeof proposeCategoryChangeInput>;
+export type ProposeCategoryChangeResult = z.infer<typeof proposeCategoryChangeResult>;
 
 export interface CategorizationGateway {
   overrideMerchant(input: OverrideMerchantInput, ctx: GatewayCtx): Promise<OverrideMerchantResult>;
@@ -46,4 +60,8 @@ export interface CategorizationGateway {
   rename(input: RenameCategoryInput, ctx: GatewayCtx): Promise<RenameCategoryResult>;
   remove(input: DeleteCategoryInput, ctx: GatewayCtx): Promise<DeleteCategoryResult>;
   list(input: ListCategoriesInput, ctx: GatewayCtx): Promise<ListCategoriesResult>;
+  propose(
+    input: ProposeCategoryChangeInput,
+    ctx: GatewayCtx,
+  ): Promise<ProposeCategoryChangeResult>;
 }

@@ -218,3 +218,28 @@ rename: identical with intent:'rename' + newName, caption references newName,
   5. Delete a freshly created empty category → caption reads "Ninguna transacción
      será afectada.", delete still succeeds.
   6. Transaction delete still shows its plain card with no caption — unchanged.
+
+## Known limitation — agent may skip the card on a repeat request
+
+The confirmation card depends on the agent choosing to call the read-only
+`proposeCategoryChange` tool. Unlike `proposeTransactionMutation` (which the agent
+*needs* to locate the target transaction), a category delete/rename can be
+fulfilled without the tool — the agent already has the category name and can ask
+for confirmation conversationally.
+
+When a prior delete/rename exchange for the same category sits in the agent's
+recent messages or `semanticRecall` (e.g. the user deletes a category, cancels,
+then asks again), the agent may shortcut the tool call — it re-states the
+affected-transaction count from memory and asks "¿querés proceder?" as plain
+text. No tool call means no `optionPills` attachment, so no card renders.
+
+Mitigation in place: `instructions.ts` (CATEGORIES + MUTATIONS sections) and the
+`proposeCategoryChange` tool description forcefully require a fresh tool call on
+every request, including repeats, and forbid asking for confirmation in plain
+text. This makes the first-time path reliable and reduces — but does not provably
+eliminate — the skip on an immediate repeat.
+
+When the card is skipped the mutation still works correctly: the agent asks in
+text, and on an affirmative reply calls `deleteCategory` / `renameCategory`. Only
+the card is lost, not the action. A fully robust fix would require not depending
+on the agent electing to call a separate UI-only tool — out of scope here.

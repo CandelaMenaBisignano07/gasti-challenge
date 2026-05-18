@@ -23,3 +23,9 @@ export const renameCategoryInput = z.object({
 export const deleteCategoryInput = z.object({
   name: z.string().min(1),
 });
+
+export const proposeCategoryChangeInput = z.object({
+  intent: z.enum(['delete', 'rename']),
+  name: z.string().min(1),
+  newName: z.string().min(1).max(24).optional(),
+});
