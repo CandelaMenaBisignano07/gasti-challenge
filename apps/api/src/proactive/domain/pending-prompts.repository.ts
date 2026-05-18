@@ -1,7 +1,11 @@
 import type { NoticeReason, PendingPrompt } from './pending-prompt';
 
 export const PENDING_PROMPTS_REPOSITORY = 'PENDING_PROMPTS_REPOSITORY';
-export type NewPendingPrompt = Omit<PendingPrompt, 'resolvedTransactionId' | 'resolvedAt'>;
+// The repository owns id generation, so callers do not supply one.
+export type NewPendingPrompt = Omit<
+  PendingPrompt,
+  'id' | 'resolvedTransactionId' | 'resolvedAt'
+>;
 
 export interface PendingPromptsRepository {
   create(p: NewPendingPrompt): Promise<PendingPrompt>;

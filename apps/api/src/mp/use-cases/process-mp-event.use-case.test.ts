@@ -88,11 +88,11 @@ function fakePendingPromptsRepo(seed: PendingPrompt[] = []): {
       async create(p: NewPendingPrompt) {
         const created: PendingPrompt = {
           ...p,
+          id: `pp_test_${(n += 1)}`,
           resolvedTransactionId: null,
           resolvedAt: null,
         };
         rows.push(created);
-        n += 1;
         return { ...created };
       },
       async findByMpPaymentId(userId, mpPaymentId) {

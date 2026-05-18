@@ -159,7 +159,6 @@ export class ProcessMpEvent {
     const paymentDate =
       args.payment.date_approved ?? args.payment.date_created ?? now;
     return {
-      id: `pp_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`,
       userId: args.userId,
       mpPaymentId: args.mpPaymentId,
       kind: args.kind,
