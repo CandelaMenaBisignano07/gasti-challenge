@@ -29,7 +29,7 @@ export function makeCategorizationTools(gateway: CategorizationGateway) {
     renameCategory: createGatewayTool({
       id: 'renameCategory',
       description:
-        'Rename a custom category. Existing transactions, overrides and budgets follow the rename. The seven default categories cannot be renamed.',
+        'Rename a custom category. Confirmation-gated: only call after proposeCategoryChange and an explicit user confirmation. Existing transactions, overrides and budgets follow the rename. The seven default categories cannot be renamed.',
       inputSchema: s.renameCategoryInput,
       outputSchema: s.renameCategoryResult,
       call: (i, c) => gateway.rename(i, c),
@@ -37,7 +37,7 @@ export function makeCategorizationTools(gateway: CategorizationGateway) {
     deleteCategory: createGatewayTool({
       id: 'deleteCategory',
       description:
-        'Delete a custom category. Everything assigned to it falls back to "otros" — state this plainly before calling. The seven default categories cannot be deleted.',
+        'Delete a custom category. Confirmation-gated: only call after proposeCategoryChange and an explicit user confirmation. Everything assigned to it falls back to "otros". The seven default categories cannot be deleted.',
       inputSchema: s.deleteCategoryInput,
       outputSchema: s.deleteCategoryResult,
       call: (i, c) => gateway.remove(i, c),
@@ -48,6 +48,14 @@ export function makeCategorizationTools(gateway: CategorizationGateway) {
       inputSchema: s.listCategoriesInput,
       outputSchema: s.listCategoriesResult,
       call: (i, c) => gateway.list(i, c),
+    }),
+    proposeCategoryChange: createGatewayTool({
+      id: 'proposeCategoryChange',
+      description:
+        'Read-only. Identify a custom-category delete or rename and present it for confirmation; returns the count of transactions the change will move. Always call this before deleteCategory or renameCategory.',
+      inputSchema: s.proposeCategoryChangeInput,
+      outputSchema: s.proposeCategoryChangeResult,
+      call: (i, c) => gateway.propose(i, c),
     }),
   };
 }
