@@ -1,11 +1,12 @@
 import { Agent } from '@mastra/core/agent';
 import type { RequestContext } from '@mastra/core/request-context';
+import type { Memory } from '@mastra/memory';
 import { z } from 'zod';
 import { buildInstructions } from './instructions';
 
 export interface GastiAgentDeps {
   tools: Record<string, unknown>;
-  memory?: unknown;
+  memory?: Memory;
 }
 
 export function makeGastiAgent({ tools, memory }: GastiAgentDeps) {
@@ -16,6 +17,6 @@ export function makeGastiAgent({ tools, memory }: GastiAgentDeps) {
     instructions: async ({ requestContext }) => buildInstructions(requestContext as RequestContext),
     requestContextSchema: z.object({ today: z.string(), userId: z.string() }),
     tools: tools as never,
-    ...(memory ? { memory: memory as never } : {}),
+    ...(memory ? { memory } : {}),
   });
 }
