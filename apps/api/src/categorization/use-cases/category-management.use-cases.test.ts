@@ -2,6 +2,7 @@ import { test, expect } from 'bun:test';
 import { CreateCategory } from './create-category.use-case';
 import { RenameCategory } from './rename-category.use-case';
 import { DeleteCategory } from './delete-category.use-case';
+import { ListCategories } from './list-categories.use-case';
 import { CategoryRegistry } from '../../shared/providers/category-registry';
 import { DomainError } from '../../shared/domain/domain-error';
 import {
@@ -147,4 +148,19 @@ test('delete-category rejects an unknown category', async () => {
     new CategoryRegistry(categories),
   );
   await expect(useCase.execute({ name: 'inexistente' })).rejects.toThrow(DomainError);
+});
+
+test('list-categories returns defaults then custom, flagged by isCustom', async () => {
+  const categories = fakeCategoriesRepo(['mascotas']);
+  const result = await new ListCategories(categories, new CategoryRegistry(categories)).execute();
+  expect(result.categories).toEqual([
+    { name: 'comida', isCustom: false },
+    { name: 'transporte', isCustom: false },
+    { name: 'entretenimiento', isCustom: false },
+    { name: 'salud', isCustom: false },
+    { name: 'servicios', isCustom: false },
+    { name: 'educacion', isCustom: false },
+    { name: 'otros', isCustom: false },
+    { name: 'mascotas', isCustom: true },
+  ]);
 });
