@@ -17,15 +17,18 @@ import { makeGoalsTools } from '../goals/interface/goals.tools';
 import { makeGastiAgent } from '../agent/gasti-agent';
 import { buildMastraStorage } from './storage';
 import { buildGastiMemory } from './memory';
+import { DEFAULT_CATEGORIES } from '../shared/domain/category';
 
 const api = makeApiClient();
+
+const categorizationGateway = makeHttpCategorizationGateway(api);
 
 const tools = {
   ...makeSpendingTools(makeHttpSpendingGateway(api)),
   ...makeInsightsTools(makeHttpInsightsGateway(api)),
   ...makeBudgetsTools(makeHttpBudgetsGateway(api)),
   ...makeIncomeTools(makeHttpIncomeGateway(api)),
-  ...makeCategorizationTools(makeHttpCategorizationGateway(api)),
+  ...makeCategorizationTools(categorizationGateway),
   ...makeTransactionsTools(makeHttpTransactionsGateway(api)),
   ...makeGoalsTools(makeHttpGoalsGateway(api)),
 };
@@ -41,6 +44,15 @@ export const mastra = new Mastra({
         const requestContext = context.get('requestContext');
         requestContext.set('today', new Date().toISOString().slice(0, 10));
         requestContext.set('userId', 'default-user');
+        try {
+          const { categories } = await categorizationGateway.list({}, { userId: 'default-user' });
+          requestContext.set(
+            'categories',
+            categories.map((c) => c.name),
+          );
+        } catch {
+          requestContext.set('categories', [...DEFAULT_CATEGORIES]);
+        }
         await next();
       },
     ],

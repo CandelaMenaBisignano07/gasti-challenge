@@ -15,7 +15,11 @@ export function makeGastiAgent({ tools, memory }: GastiAgentDeps) {
     name: 'Gasti',
     model: 'openai/gpt-4o',
     instructions: async ({ requestContext }) => buildInstructions(requestContext as RequestContext),
-    requestContextSchema: z.object({ today: z.string(), userId: z.string() }),
+    requestContextSchema: z.object({
+      today: z.string(),
+      userId: z.string(),
+      categories: z.array(z.string()),
+    }),
     tools: tools as never,
     ...(memory ? { memory } : {}),
   });
