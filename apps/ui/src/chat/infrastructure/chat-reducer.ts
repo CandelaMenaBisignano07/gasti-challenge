@@ -5,20 +5,35 @@ export type ChatStatus = 'idle' | 'thinking';
 export type ChatState = {
   messages: Message[];
   status: ChatStatus;
+  /** The Gasti reply being streamed in; null when no reply is in flight. */
+  streamingMessage: GastiMessage | null;
 };
 
 export const initialChatState: ChatState = {
   messages: [],
   status: 'idle',
+  streamingMessage: null,
 };
 
 export type ChatAction =
   | { type: 'APPEND_USER'; message: UserMessage }
   | { type: 'SET_THINKING' }
   | { type: 'ADD_TOOL_CALL_TO_PENDING'; call: ToolCall }
+  | { type: 'APPEND_PARTIAL'; text: string }
   | { type: 'APPEND_GASTI'; message: GastiMessage }
   | { type: 'RESOLVE_LAST_OPTIONS' }
   | { type: 'RESET' };
+
+/** Starts a fresh in-progress Gasti message. */
+function emptyStreaming(): GastiMessage {
+  return {
+    id: `streaming_${Date.now()}`,
+    role: 'gasti',
+    text: '',
+    toolCalls: [],
+    sentAt: new Date().toISOString(),
+  };
+}
 
 export function chatReducer(state: ChatState, action: ChatAction): ChatState {
   switch (action.type) {
@@ -29,13 +44,31 @@ export function chatReducer(state: ChatState, action: ChatAction): ChatState {
       return { ...state, status: 'thinking' };
 
     case 'ADD_TOOL_CALL_TO_PENDING': {
-      // Reserved for streaming; for v1 we just keep the call to attach on APPEND_GASTI.
-      // No state mutation needed — the mock attaches tool calls directly to the final message.
-      return state;
+      const base = state.streamingMessage ?? emptyStreaming();
+      return {
+        ...state,
+        streamingMessage: {
+          ...base,
+          toolCalls: [...(base.toolCalls ?? []), action.call],
+        },
+      };
+    }
+
+    case 'APPEND_PARTIAL': {
+      const base = state.streamingMessage ?? emptyStreaming();
+      return {
+        ...state,
+        streamingMessage: { ...base, text: base.text + action.text },
+      };
     }
 
     case 'APPEND_GASTI':
-      return { messages: [...state.messages, action.message], status: 'idle' };
+      return {
+        ...state,
+        messages: [...state.messages, action.message],
+        status: 'idle',
+        streamingMessage: null,
+      };
 
     case 'RESOLVE_LAST_OPTIONS': {
       const next = [...state.messages];
