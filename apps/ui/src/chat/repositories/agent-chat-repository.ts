@@ -87,6 +87,9 @@ export class AgentChatRepository implements ChatRepository {
       if (buffer.trim()) yield JSON.parse(buffer) as ReplyEvent;
     } catch {
       yield errorFinal();
+    } finally {
+      // Release the body if the consumer abandons the generator mid-stream.
+      reader.cancel().catch(() => {});
     }
   }
 }
