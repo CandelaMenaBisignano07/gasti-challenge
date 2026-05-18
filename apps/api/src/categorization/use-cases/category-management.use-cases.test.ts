@@ -1,8 +1,25 @@
 import { test, expect } from 'bun:test';
 import { CreateCategory } from './create-category.use-case';
+import { RenameCategory } from './rename-category.use-case';
 import { CategoryRegistry } from '../../shared/providers/category-registry';
 import { DomainError } from '../../shared/domain/domain-error';
-import { fakeCategoriesRepo } from '../../shared/testing/fakes';
+import {
+  fakeBudgetsRepo,
+  fakeCategoriesRepo,
+  fakeCategorizationRepo,
+  fakeTransactionsRepo,
+} from '../../shared/testing/fakes';
+import type { Transaction } from '../../shared/domain/transaction';
+
+const tx = (id: string, category: string): Transaction => ({
+  id,
+  date: '2026-05-01',
+  amount: 1000,
+  currency: 'ARS',
+  category,
+  description: '',
+  merchant: 'Coto',
+});
 
 test('create-category normalizes the name and persists it', async () => {
   const repo = fakeCategoriesRepo();
@@ -29,4 +46,60 @@ test('create-category rejects a blank or over-long name', async () => {
   const useCase = new CreateCategory(repo, new CategoryRegistry(repo));
   await expect(useCase.execute({ name: '   ' })).rejects.toThrow(DomainError);
   await expect(useCase.execute({ name: 'x'.repeat(25) })).rejects.toThrow(DomainError);
+});
+
+test('rename-category cascades into transactions, overrides and budgets', async () => {
+  const categories = fakeCategoriesRepo(['mascotas']);
+  const txs = fakeTransactionsRepo([tx('txn_001', 'mascotas'), tx('txn_002', 'comida')]);
+  const overrides = fakeCategorizationRepo({
+    merchants: { 'Pet Shop': 'mascotas' },
+    transactions: { txn_003: 'mascotas' },
+  });
+  const budgets = fakeBudgetsRepo({ '2026-05': { mascotas: 10000 } });
+  const useCase = new RenameCategory(categories, txs, overrides, budgets, new CategoryRegistry(categories));
+
+  const result = await useCase.execute({ from: 'mascotas', to: 'Animales' });
+
+  expect(result).toEqual({ from: 'mascotas', to: 'animales' });
+  expect(await categories.all()).toEqual(['animales']);
+  expect((await txs.all()).find((t) => t.id === 'txn_001')?.category).toBe('animales');
+  expect((await overrides.overrides()).merchants['Pet Shop']).toBe('animales');
+  expect((await overrides.overrides()).transactions.txn_003).toBe('animales');
+  expect(await budgets.forMonth('2026-05')).toEqual({ animales: 10000 });
+});
+
+test('rename-category rejects renaming a default category', async () => {
+  const categories = fakeCategoriesRepo();
+  const useCase = new RenameCategory(
+    categories,
+    fakeTransactionsRepo(),
+    fakeCategorizationRepo(),
+    fakeBudgetsRepo(),
+    new CategoryRegistry(categories),
+  );
+  await expect(useCase.execute({ from: 'comida', to: 'comidas' })).rejects.toThrow(DomainError);
+});
+
+test('rename-category rejects an unknown source category', async () => {
+  const categories = fakeCategoriesRepo();
+  const useCase = new RenameCategory(
+    categories,
+    fakeTransactionsRepo(),
+    fakeCategorizationRepo(),
+    fakeBudgetsRepo(),
+    new CategoryRegistry(categories),
+  );
+  await expect(useCase.execute({ from: 'inexistente', to: 'algo' })).rejects.toThrow(DomainError);
+});
+
+test('rename-category rejects a target that collides with an existing category', async () => {
+  const categories = fakeCategoriesRepo(['mascotas']);
+  const useCase = new RenameCategory(
+    categories,
+    fakeTransactionsRepo(),
+    fakeCategorizationRepo(),
+    fakeBudgetsRepo(),
+    new CategoryRegistry(categories),
+  );
+  await expect(useCase.execute({ from: 'mascotas', to: 'Comida' })).rejects.toThrow(DomainError);
 });
