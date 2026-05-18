@@ -323,7 +323,8 @@ Frosted cards over mesh add an inner top highlight via `box-shadow: inset 0 1px 
 - Default transition is **260ms** with `--ease-out`.
 - Card / sheet expansions are **480ms** with the same ease.
 - Mesh drifts are **1200ms+** ambient loops — opacity-only or `translate`, never `scale` or `rotate`.
-- `--ease-spring` is allowed **only** on the AI sparkle pulse. Buttons do not bounce.
+- `--ease-spring` is allowed on the AI sparkle pulse and on message entrance. Buttons do not bounce.
+- **Message entrance:** new chat messages fade in and rise 10px — **320ms** with `--ease-spring`.
 
 ### Hover & press
 
