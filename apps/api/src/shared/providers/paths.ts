@@ -8,3 +8,7 @@ export const TRANSACTIONS_FILE =
   process.env.TRANSACTIONS_FILE || path.join(REPO_ROOT, 'data/transactions.json');
 
 export const DATA_DIR = process.env.API_DATA_DIR || path.join(API_ROOT, 'data');
+
+export const USERS_FILE = process.env.USERS_FILE || path.join(DATA_DIR, 'users.json');
+export const PENDING_PROMPTS_FILE =
+  process.env.PENDING_PROMPTS_FILE || path.join(DATA_DIR, 'pending-prompts.json');
