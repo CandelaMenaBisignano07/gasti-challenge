@@ -2,6 +2,7 @@
 
 import { useCallback, useState, type FormEvent, type KeyboardEvent } from 'react';
 import { Sparkle } from '@/shared/icons/sparkle';
+import { MercadoPagoChip } from '@/mp/components/mercado-pago-chip';
 
 type ComposerState = 'idle' | 'thinking' | 'disabled';
 
@@ -45,7 +46,7 @@ export function Composer({
     <form
       onSubmit={handleSubmit}
       className={[
-        'flex items-center gap-s3 rounded-pill',
+        'flex flex-col gap-s2 rounded-lg',
         'bg-surface-frost border border-line-mesh backdrop-blur-2',
         'px-s3 py-s2 shadow-3',
       ].join(' ')}
@@ -60,25 +61,28 @@ export function Composer({
         disabled={disabled}
         aria-label="Mensaje para Gasti"
         className={[
-          'flex-1 resize-none bg-transparent outline-none',
+          'w-full resize-none bg-transparent outline-none',
           'font-display text-[15px] leading-[1.5] text-ink-1 placeholder:text-ink-4',
           'max-h-32 py-s1',
         ].join(' ')}
       />
-      <button
-        type="submit"
-        disabled={!canSubmit}
-        aria-label="Enviar"
-        className={[
-          'flex h-9 w-9 items-center justify-center rounded-pill',
-          'text-white shadow-brand-glow [background:var(--brand-grad)]',
-          'transition-transform duration-fast ease-out active:scale-[0.985]',
-          'outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ai',
-          'disabled:opacity-30',
-        ].join(' ')}
-      >
-        <Sparkle size={18} className={state === 'thinking' ? 'animate-sparkle-pulse' : ''} />
-      </button>
+      <div className="flex items-center gap-s3">
+        <MercadoPagoChip />
+        <button
+          type="submit"
+          disabled={!canSubmit}
+          aria-label="Enviar"
+          className={[
+            'ml-auto flex h-9 w-9 items-center justify-center rounded-pill',
+            'text-white shadow-brand-glow [background:var(--brand-grad)]',
+            'transition-transform duration-fast ease-out active:scale-[0.985]',
+            'outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ai',
+            'disabled:opacity-30',
+          ].join(' ')}
+        >
+          <Sparkle size={18} className={state === 'thinking' ? 'animate-sparkle-pulse' : ''} />
+        </button>
+      </div>
     </form>
   );
 }
