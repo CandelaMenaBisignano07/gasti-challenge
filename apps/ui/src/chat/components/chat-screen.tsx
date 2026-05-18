@@ -9,7 +9,7 @@ import { MeshBackground } from '@/shared/mesh/mesh-background';
 import { useChat } from '@/chat/infrastructure/use-chat';
 
 export function ChatScreen() {
-  const { messages, status, streamingMessage, view, sendMessage } = useChat();
+  const { messages, status, streamingMessage, view, sendMessage, reset } = useChat();
   const isLanding = view === 'landing';
   const composerState = status === 'thinking' ? 'thinking' : 'idle';
   const threadMessages = streamingMessage ? [...messages, streamingMessage] : messages;
@@ -31,7 +31,7 @@ export function ChatScreen() {
     <>
       <MeshBackground visible={isLanding} />
       <div className="relative flex min-h-screen flex-col">
-        <Header variant={isLanding ? 'frosted' : 'solid'} />
+        <Header variant={isLanding ? 'frosted' : 'solid'} onTitleClick={reset} />
 
         <main className="relative flex-1 mx-auto w-full max-w-[720px] px-s4 sm:px-s6 lg:px-s7 pb-[100px]">
           {!isLanding && (

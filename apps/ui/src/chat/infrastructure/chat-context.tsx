@@ -10,6 +10,7 @@ import { makeLoadInitialConversation } from '@/chat/use-cases/load-initial-conve
 export type ChatContextValue = ChatState & {
   sendMessage: (text: string) => Promise<void>;
   pickOption: (optionId: string) => Promise<void>;
+  reset: () => void;
 };
 
 export const ChatContext = createContext<ChatContextValue | null>(null);
@@ -99,9 +100,15 @@ export function ChatProvider({ children }: { children: ReactNode }) {
     [confirmMutation, state.messages],
   );
 
+  const reset = useCallback(() => {
+    isFirstSend.current = true;
+    hadRestoredHistory.current = false;
+    dispatch({ type: 'RESET' });
+  }, []);
+
   const value = useMemo<ChatContextValue>(
-    () => ({ ...state, sendMessage, pickOption }),
-    [state, sendMessage, pickOption],
+    () => ({ ...state, sendMessage, pickOption, reset }),
+    [state, sendMessage, pickOption, reset],
   );
 
   return <ChatContext.Provider value={value}>{children}</ChatContext.Provider>;
