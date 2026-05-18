@@ -52,7 +52,7 @@ export function makeCategorizationTools(gateway: CategorizationGateway) {
     proposeCategoryChange: createGatewayTool({
       id: 'proposeCategoryChange',
       description:
-        'Read-only. Identify a custom-category delete or rename and present it for confirmation; returns the count of transactions the change will move. Always call this before deleteCategory or renameCategory.',
+        'Read-only. MANDATORY first step for every custom-category delete or rename request — call it each time, even if you already know the affected-transaction count from earlier in the conversation. It renders the confirmation card the user acts on; skip it and there is no card. Returns the affected-transaction count. Never ask for delete/rename confirmation in plain text instead of calling this.',
       inputSchema: s.proposeCategoryChangeInput,
       outputSchema: s.proposeCategoryChangeResult,
       call: (i, c) => gateway.propose(i, c),
