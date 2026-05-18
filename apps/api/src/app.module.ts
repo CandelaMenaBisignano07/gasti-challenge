@@ -9,6 +9,7 @@ import { BudgetsModule } from './budgets/budgets.module';
 import { IncomeModule } from './income/income.module';
 import { GoalsModule } from './goals/goals.module';
 import { UsersModule } from './users/users.module';
+import { MpModule } from './mp/mp.module';
 
 @Module({
   imports: [
@@ -21,6 +22,7 @@ import { UsersModule } from './users/users.module';
     IncomeModule,
     GoalsModule,
     UsersModule,
+    MpModule,
   ],
   controllers: [AppController],
 })
