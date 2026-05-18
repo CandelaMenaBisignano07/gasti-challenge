@@ -8,9 +8,10 @@ import { MeshBackground } from '@/shared/mesh/mesh-background';
 import { useChat } from '@/chat/infrastructure/use-chat';
 
 export function ChatScreen() {
-  const { messages, status, sendMessage } = useChat();
+  const { messages, status, streamingMessage, sendMessage } = useChat();
   const isEmpty = messages.length === 0;
   const composerState = status === 'thinking' ? 'thinking' : 'idle';
+  const threadMessages = streamingMessage ? [...messages, streamingMessage] : messages;
 
   return (
     <>
@@ -22,7 +23,10 @@ export function ChatScreen() {
           {isEmpty ? (
             <LandingHero />
           ) : (
-            <ConversationThread messages={messages} pending={status === 'thinking'} />
+            <ConversationThread
+              messages={threadMessages}
+              pending={status === 'thinking' && streamingMessage === null}
+            />
           )}
         </main>
 
