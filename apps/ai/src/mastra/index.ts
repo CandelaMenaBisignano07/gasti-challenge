@@ -15,6 +15,7 @@ import { makeCategorizationTools } from '../categorization/interface/categorizat
 import { makeTransactionsTools } from '../transactions/interface/transactions.tools';
 import { makeGoalsTools } from '../goals/interface/goals.tools';
 import { makeGastiAgent } from '../agent/gasti-agent';
+import { classifyMpEventWorkflow } from '../mp-classification/workflows/classify-mp-event.workflow';
 import { buildMastraStorage } from './storage';
 import { buildGastiMemory } from './memory';
 import { DEFAULT_CATEGORIES } from '../shared/domain/category';
@@ -38,7 +39,10 @@ const gasti = makeGastiAgent({ tools, memory: buildGastiMemory() });
 
 export const mastra = new Mastra({
   agents: { gasti },
-  workflows: { classifyTransaction: classifyTransactionWorkflow },
+  workflows: {
+    classifyTransaction: classifyTransactionWorkflow,
+    classifyMpEvent: classifyMpEventWorkflow,
+  },
   storage: buildMastraStorage(),
   server: {
     middleware: [
