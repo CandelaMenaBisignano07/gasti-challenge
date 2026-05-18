@@ -15,14 +15,14 @@ type RawTransaction = {
 
 /**
  * Mock transactions sourced from the real `data/transactions.json` dataset.
- * The dataset stores expenses as positive integers; the domain `Transaction`
- * contract is *negative = expense, positive = income*, so amounts are negated.
+ * The dataset and the domain `Transaction` contract both store expenses as
+ * positive integers, so amounts pass through unchanged.
  */
 export const MOCK_TRANSACTIONS: Transaction[] = (rawTransactions as RawTransaction[]).map(
   (raw): Transaction => ({
     id: raw.id,
     date: raw.date,
-    amount: -raw.amount,
+    amount: raw.amount,
     currency: raw.currency,
     category: raw.category,
     description: raw.description,
