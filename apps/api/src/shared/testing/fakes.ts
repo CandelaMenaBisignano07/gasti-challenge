@@ -10,6 +10,7 @@ import type {
   CategoryOverrides,
 } from '../domain/category-overrides';
 import type { BudgetsRepository } from '../../budgets/domain/budgets.repository';
+import type { CategoriesRepository } from '../domain/custom-categories';
 
 export function fixedClock(iso: string): Clock {
   return { now: () => new Date(`${iso}T12:00:00.000Z`) };
@@ -96,6 +97,24 @@ export function fakeBudgetsRepo(
     },
     async clearCategory(category) {
       for (const month of Object.keys(data)) delete data[month][category];
+    },
+  };
+}
+
+export function fakeCategoriesRepo(seed: string[] = []): CategoriesRepository {
+  let data = [...seed];
+  return {
+    async all() {
+      return [...data];
+    },
+    async add(name) {
+      if (!data.includes(name)) data.push(name);
+    },
+    async remove(name) {
+      data = data.filter((c) => c !== name);
+    },
+    async rename(from, to) {
+      data = data.map((c) => (c === from ? to : c));
     },
   };
 }
