@@ -1,7 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { createJsonStore, type JsonStore } from '../../shared/providers/json-store';
 import { TRANSACTIONS_FILE } from '../../shared/providers/paths';
-import { formatIso } from '../../shared/domain/dates';
 import {
   transactionSchema,
   type Transaction,
@@ -13,6 +12,11 @@ import type { TransactionFields, TransactionsRepository } from '../domain/transa
 export class JsonTransactionsRepository implements TransactionsRepository {
   private readonly store: JsonStore<unknown[]> = createJsonStore<unknown[]>(TRANSACTIONS_FILE, []);
 
+  // Normalize-on-read: every raw row is parsed through transactionSchema, so the
+  // checked-in 7-field data/transactions.json upgrades to the 13-field shape in
+  // memory. Note: the first mutation (add/update/delete/updateStatus) writes the
+  // normalized rows back, so transactions.json is rewritten in the 13-field shape
+  // once the app runs — expected, not a bug.
   async all(): Promise<Transaction[]> {
     const raw = await this.store.read();
     return raw.map((r) => transactionSchema.parse(r));
@@ -76,7 +80,9 @@ export class JsonTransactionsRepository implements TransactionsRepository {
     const txs = await this.all();
     const index = txs.findIndex((t) => t.id === id);
     if (index === -1) return;
-    txs[index] = { ...txs[index], status: newStatus, statusChangedAt: formatIso(at) };
+    // A status change is a point-in-time event — stamp a full ISO timestamp,
+    // not a date-only string (consistent with PendingPrompt.resolvedAt).
+    txs[index] = { ...txs[index], status: newStatus, statusChangedAt: at.toISOString() };
     await this.store.write(txs);
   }
 }

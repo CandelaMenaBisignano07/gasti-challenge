@@ -21,7 +21,7 @@ test('marks a transaction with the given status and stamps statusChangedAt', asy
 
   const tx = await repo.getById('default-user', 'txn_001');
   expect(tx?.status).toBe('refunded');
-  expect(tx?.statusChangedAt).toBe('2026-05-18');
+  expect(tx?.statusChangedAt).toBe('2026-05-18T12:00:00.000Z');
 });
 
 test('is a no-op for an unknown transaction id', async () => {

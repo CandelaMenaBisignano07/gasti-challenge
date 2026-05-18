@@ -1,7 +1,6 @@
 import type { Clock } from '../providers/clock';
 import type { Transaction, TransactionStatus } from '../domain/transaction';
 import type { Category } from '../domain/category';
-import { formatIso } from '../domain/dates';
 import type {
   TransactionFields,
   TransactionsRepository,
@@ -61,7 +60,7 @@ export function fakeTransactionsRepo(seed: Transaction[] = []): TransactionsRepo
     async updateStatus(id, newStatus: TransactionStatus, at: Date) {
       const i = txs.findIndex((t) => t.id === id);
       if (i === -1) return;
-      txs[i] = { ...txs[i], status: newStatus, statusChangedAt: formatIso(at) };
+      txs[i] = { ...txs[i], status: newStatus, statusChangedAt: at.toISOString() };
     },
   };
 }
