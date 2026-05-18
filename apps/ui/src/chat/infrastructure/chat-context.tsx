@@ -2,7 +2,7 @@
 
 import { createContext, useCallback, useMemo, useReducer, type ReactNode } from 'react';
 import { chatReducer, initialChatState, type ChatState } from '@/chat/infrastructure/chat-reducer';
-import { MockChatRepository } from '@/chat/repositories/mock-chat-repository';
+import { AgentChatRepository } from '@/chat/repositories/agent-chat-repository';
 import { makeSendUserMessage } from '@/chat/use-cases/send-user-message';
 import { makeConfirmMutation } from '@/chat/use-cases/confirm-mutation';
 
@@ -14,7 +14,7 @@ export type ChatContextValue = ChatState & {
 export const ChatContext = createContext<ChatContextValue | null>(null);
 
 export function ChatProvider({ children }: { children: ReactNode }) {
-  const repo = useMemo(() => new MockChatRepository(), []);
+  const repo = useMemo(() => new AgentChatRepository(), []);
   const sendUserMessage = useMemo(() => makeSendUserMessage({ repo }), [repo]);
   const confirmMutation = useMemo(() => makeConfirmMutation({ repo }), [repo]);
 
@@ -34,7 +34,7 @@ export function ChatProvider({ children }: { children: ReactNode }) {
             dispatch({ type: 'ADD_TOOL_CALL_TO_PENDING', call: ev.call });
             break;
           case 'partial':
-            // streaming not exercised in v1
+            dispatch({ type: 'APPEND_PARTIAL', text: ev.text });
             break;
           case 'final':
             dispatch({ type: 'APPEND_GASTI', message: ev.message });
@@ -59,6 +59,7 @@ export function ChatProvider({ children }: { children: ReactNode }) {
             dispatch({ type: 'ADD_TOOL_CALL_TO_PENDING', call: ev.call });
             break;
           case 'partial':
+            dispatch({ type: 'APPEND_PARTIAL', text: ev.text });
             break;
           case 'final':
             dispatch({ type: 'APPEND_GASTI', message: ev.message });
