@@ -106,6 +106,20 @@ test('rename-category rejects a target that collides with an existing category',
   await expect(useCase.execute({ from: 'mascotas', to: 'Comida' })).rejects.toThrow(DomainError);
 });
 
+test('rename-category treats a rename to the same normalized name as a no-op', async () => {
+  const categories = fakeCategoriesRepo(['mascotas']);
+  const useCase = new RenameCategory(
+    categories,
+    fakeTransactionsRepo(),
+    fakeCategorizationRepo(),
+    fakeBudgetsRepo(),
+    new CategoryRegistry(categories),
+  );
+  const result = await useCase.execute({ from: 'mascotas', to: 'Mascotas' });
+  expect(result).toEqual({ from: 'mascotas', to: 'mascotas' });
+  expect(await categories.all()).toEqual(['mascotas']);
+});
+
 test('delete-category falls everything back to otros and removes the category', async () => {
   const categories = fakeCategoriesRepo(['mascotas']);
   const txs = fakeTransactionsRepo([tx('txn_001', 'mascotas'), tx('txn_002', 'comida')]);

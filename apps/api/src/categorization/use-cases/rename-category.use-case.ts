@@ -51,6 +51,9 @@ export class RenameCategory {
     if (!(await this.registry.isCustom(from))) {
       throw new DomainError('NOT_FOUND', `La categoría "${from}" no existe.`);
     }
+    if (from === to) {
+      return { from, to };
+    }
     if (await this.registry.exists(to)) {
       throw new DomainError('VALIDATION_ERROR', `La categoría "${to}" ya existe.`);
     }
