@@ -11,7 +11,9 @@ export const classifyMpEventInput = z.object({
 
 export const classificationSchema = z.object({
   category: categorySchema,
-  suggestedDescription: z.string(),
+  // Bounded so a runaway LLM description fails structured-output validation
+  // instead of leaking an over-long string into the proactive UI cards.
+  suggestedDescription: z.string().min(1).max(80),
   confidence: z.number().min(0).max(1),
 });
 

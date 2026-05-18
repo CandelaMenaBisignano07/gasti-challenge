@@ -38,22 +38,11 @@
  * NOTE for Phase 4: re-verify this route against the running `mastra dev` server
  * (`GET /api/workflows` lists registered workflows and their ids).
  */
-import { Agent } from '@mastra/core/agent';
 import { toStandardSchema } from '@mastra/core/schema';
 import { createStep, createWorkflow } from '@mastra/core/workflows';
 import { z } from 'zod';
 import { classifyMpEventInput, classificationSchema } from '../domain/classification';
-
-const classifierAgent = new Agent({
-  id: 'mp-classifier',
-  name: 'MP Classifier',
-  model: 'openai/gpt-4o',
-  instructions: `You classify a single Mercado Pago payment for an Argentine personal-finance app.
-Given the payment, choose exactly one category from: comida, transporte, entretenimiento, salud,
-servicios, educacion, otros. Write a short neutral Spanish description (max 6 words, no emojis).
-Report confidence 0..1 — how sure the category is. If the merchant/counterparty is unknown or
-ambiguous, use 'otros' and a low confidence. For income payments, still pick the closest category.`,
-});
+import { mpClassifierAgent } from '../agents/mp-classifier.agent';
 
 const buildPrompt = createStep({
   id: 'build-classification-prompt',
@@ -72,7 +61,7 @@ const buildPrompt = createStep({
 
 // `structuredOutput.schema` expects a `StandardSchemaWithJSON`; `toStandardSchema`
 // is Mastra's adapter that wraps a plain Zod (v3) schema into that shape.
-const classifyStep = createStep(classifierAgent, {
+const classifyStep = createStep(mpClassifierAgent, {
   structuredOutput: { schema: toStandardSchema(classificationSchema) },
 });
 
