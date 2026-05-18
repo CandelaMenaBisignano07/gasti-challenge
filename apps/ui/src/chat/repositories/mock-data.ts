@@ -34,6 +34,7 @@ export const MOCK_COMIDA_BUDGET: BudgetProgress = {
   category: 'comida',
   budget: 80000,
   spent: 54000,
-  projection: 92000,
-  periodLabel: 'Mayo 2026',
+  remaining: 26000,
+  pace: 'over',
+  projected: 92000,
 };
