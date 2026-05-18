@@ -406,7 +406,6 @@ The `users` feature: the multi-tenant-shaped `User` value object, a JSON reposit
 **Files:**
 - Create `apps/api/src/users/users.module.ts`
 - Modify `apps/api/src/app.module.ts`
-- Modify `apps/api/src/main.ts`
 
 - [ ] **Step 1:** `users.module.ts` — note `TOKEN_CIPHER` is provided here from env, and the module fails loud if the key is absent:
   ```ts
