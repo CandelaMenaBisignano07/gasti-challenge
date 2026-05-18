@@ -25,7 +25,7 @@ export function ChatScreen() {
           ) : (
             <ConversationThread
               messages={threadMessages}
-              pending={status === 'thinking' && streamingMessage === null}
+              pending={status === 'thinking' && !streamingMessage?.text}
             />
           )}
         </main>
