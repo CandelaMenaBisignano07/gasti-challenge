@@ -2,9 +2,9 @@ import { test, expect } from 'bun:test';
 import { DeleteTransaction } from './delete.use-case';
 import { DomainError } from '../../shared/domain/domain-error';
 import { fakeTransactionsRepo } from '../../shared/testing/fakes';
-import type { Transaction } from '../../shared/domain/transaction';
+import { transactionSchema, type Transaction } from '../../shared/domain/transaction';
 
-const seed: Transaction = {
+const seed: Transaction = transactionSchema.parse({
   id: 'txn_001',
   date: '2026-05-01',
   amount: 1000,
@@ -12,7 +12,7 @@ const seed: Transaction = {
   category: 'comida',
   description: 'Almuerzo',
   merchant: 'Rappi',
-};
+});
 
 test('delete removes the transaction and returns its id', async () => {
   const repo = fakeTransactionsRepo([seed]);

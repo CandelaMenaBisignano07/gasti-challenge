@@ -3,17 +3,17 @@ import { UpdateTransaction } from './update.use-case';
 import { CategoryRegistry } from '../../shared/providers/category-registry';
 import { DomainError } from '../../shared/domain/domain-error';
 import { fakeCategoriesRepo, fakeTransactionsRepo } from '../../shared/testing/fakes';
-import type { Transaction } from '../../shared/domain/transaction';
+import { transactionSchema, type Transaction } from '../../shared/domain/transaction';
 
-const seed: Transaction = {
+const seed: Transaction = transactionSchema.parse({
   id: 'txn_001',
   date: '2026-05-01',
   amount: 1000,
   currency: 'ARS',
   category: 'comida',
-  description: '',
-  merchant: 'Coto',
-};
+  description: 'Almuerzo',
+  merchant: 'Rappi',
+});
 
 const registry = () => new CategoryRegistry(fakeCategoriesRepo(['mascotas']));
 

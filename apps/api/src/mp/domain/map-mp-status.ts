@@ -1,7 +1,5 @@
 import type { MpPayment } from './mp-payment';
-
-// TODO Phase 6: replace with the TransactionStatus exported from shared/domain/transaction.ts
-export type TransactionStatus = 'active' | 'refunded' | 'charged_back';
+import type { TransactionStatus } from '../../shared/domain/transaction';
 
 /** Maps a Mercado Pago payment status to our internal transaction status. */
 export const mapMpStatusToTransactionStatus = (s: MpPayment['status']): TransactionStatus => {

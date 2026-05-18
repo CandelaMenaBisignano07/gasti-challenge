@@ -5,7 +5,11 @@ import { CategoryRegistry } from '../../shared/providers/category-registry';
 import { DomainError } from '../../shared/domain/domain-error';
 import { formatIso } from '../../shared/domain/dates';
 import type { Category } from '../../shared/domain/category';
-import type { Transaction } from '../../shared/domain/transaction';
+import type {
+  Transaction,
+  TransactionDirection,
+  TransactionSource,
+} from '../../shared/domain/transaction';
 import {
   TRANSACTION_CLASSIFIER,
   type TransactionClassifier,
@@ -18,6 +22,10 @@ export interface AddTransactionInput {
   category?: Category;
   description: string;
   merchant: string;
+  userId?: string;
+  direction?: TransactionDirection;
+  source?: TransactionSource;
+  mpPaymentId?: string | null;
 }
 
 @Injectable()
@@ -52,7 +60,7 @@ export class AddTransaction {
           merchant: input.merchant,
           description: input.description,
           amount: input.amount,
-          direction: 'expense',
+          direction: input.direction ?? 'expense',
         });
         category = result.category;
         classificationConfidence = result.confidence;
@@ -70,6 +78,12 @@ export class AddTransaction {
       merchant: input.merchant,
       classificationSource,
       ...(classificationConfidence !== undefined ? { classificationConfidence } : {}),
+      userId: input.userId ?? 'default-user',
+      direction: input.direction ?? 'expense',
+      status: 'active',
+      statusChangedAt: null,
+      source: input.source ?? 'manual',
+      mpPaymentId: input.mpPaymentId ?? null,
     };
     await this.repo.add(tx);
     return { transaction: tx };

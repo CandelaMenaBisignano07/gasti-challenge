@@ -7,9 +7,9 @@ import {
   fakeCategorizationRepo,
   fakeTransactionsRepo,
 } from '../../shared/testing/fakes';
-import type { Transaction } from '../../shared/domain/transaction';
+import { transactionSchema, type Transaction } from '../../shared/domain/transaction';
 
-const seed: Transaction = {
+const seed: Transaction = transactionSchema.parse({
   id: 'txn_001',
   date: '2026-05-01',
   amount: 1000,
@@ -17,7 +17,7 @@ const seed: Transaction = {
   category: 'otros',
   description: '',
   merchant: 'Farmacity',
-};
+});
 
 const registry = () => new CategoryRegistry(fakeCategoriesRepo(['mascotas']));
 

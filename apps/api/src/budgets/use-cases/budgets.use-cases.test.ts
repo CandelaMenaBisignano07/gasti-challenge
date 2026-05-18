@@ -12,17 +12,18 @@ import {
   fixedClock,
 } from '../../shared/testing/fakes';
 import type { Category } from '../../shared/domain/category';
-import type { Transaction } from '../../shared/domain/transaction';
+import { transactionSchema, type Transaction } from '../../shared/domain/transaction';
 
-const tx = (id: string, date: string, amount: number): Transaction => ({
-  id,
-  date,
-  amount,
-  currency: 'ARS',
-  category: 'comida',
-  description: '',
-  merchant: 'Coto',
-});
+const tx = (id: string, date: string, amount: number): Transaction =>
+  transactionSchema.parse({
+    id,
+    date,
+    amount,
+    currency: 'ARS',
+    category: 'comida',
+    description: '',
+    merchant: 'Coto',
+  });
 
 test('set-budget stores the amount under the current month', async () => {
   const repo = fakeBudgetsRepo();

@@ -8,7 +8,7 @@ import { fakeCategorizationRepo, fakeTransactionsRepo, fixedClock } from '../../
 import type { Goal } from '../../shared/domain/goal';
 import type { GoalDraft, GoalsRepository } from '../domain/goals.repository';
 import type { IncomeRepository, IncomeStatement } from '../../income/domain/income.repository';
-import type { Transaction } from '../../shared/domain/transaction';
+import { transactionSchema, type Transaction } from '../../shared/domain/transaction';
 
 function fakeGoalsRepo(seed: Goal[] = []): GoalsRepository {
   let goals = seed.map((g) => ({ ...g }));
@@ -57,15 +57,21 @@ function fakeIncomeRepo(seed?: Partial<IncomeStatement>): IncomeRepository {
   };
 }
 
-const tx = (id: string, date: string, amount: number, category: Transaction['category']): Transaction => ({
-  id,
-  date,
-  amount,
-  currency: 'ARS',
-  category,
-  description: '',
-  merchant: 'X',
-});
+const tx = (
+  id: string,
+  date: string,
+  amount: number,
+  category: Transaction['category'],
+): Transaction =>
+  transactionSchema.parse({
+    id,
+    date,
+    amount,
+    currency: 'ARS',
+    category,
+    description: '',
+    merchant: 'X',
+  });
 
 test('set-goal creates a goal, then updates the same goal by name', async () => {
   const repo = fakeGoalsRepo();

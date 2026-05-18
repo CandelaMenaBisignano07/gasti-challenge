@@ -4,7 +4,7 @@ import { GetCashFlow } from './cash-flow.use-case';
 import { PeriodResolver } from '../../shared/providers/period-resolver';
 import { fakeTransactionsRepo, fixedClock } from '../../shared/testing/fakes';
 import type { IncomeRepository, IncomeStatement } from '../domain/income.repository';
-import type { Transaction } from '../../shared/domain/transaction';
+import { transactionSchema, type Transaction } from '../../shared/domain/transaction';
 
 function fakeIncomeRepo(seed?: Partial<IncomeStatement>): IncomeRepository {
   const data: IncomeStatement = {
@@ -24,15 +24,16 @@ function fakeIncomeRepo(seed?: Partial<IncomeStatement>): IncomeRepository {
   };
 }
 
-const tx = (id: string, date: string, amount: number): Transaction => ({
-  id,
-  date,
-  amount,
-  currency: 'ARS',
-  category: 'comida',
-  description: '',
-  merchant: 'Coto',
-});
+const tx = (id: string, date: string, amount: number): Transaction =>
+  transactionSchema.parse({
+    id,
+    date,
+    amount,
+    currency: 'ARS',
+    category: 'comida',
+    description: '',
+    merchant: 'Coto',
+  });
 
 test('declare recurring income sets the monthly figure', async () => {
   const repo = fakeIncomeRepo();
