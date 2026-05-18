@@ -15,6 +15,7 @@ import { makeCategorizationTools } from '../categorization/interface/categorizat
 import { makeTransactionsTools } from '../transactions/interface/transactions.tools';
 import { makeGoalsTools } from '../goals/interface/goals.tools';
 import { makeGastiAgent } from '../agent/gasti-agent';
+import { buildMastraStorage } from './storage';
 
 const api = makeApiClient();
 
@@ -33,6 +34,7 @@ const gasti = makeGastiAgent({ tools, memory: undefined });
 
 export const mastra = new Mastra({
   agents: { gasti },
+  storage: buildMastraStorage(),
   server: {
     middleware: [
       async (context, next) => {

@@ -38,3 +38,10 @@ next-env.d.ts
 # per-user agent / skill tooling (Claude Code, skills CLI)
 .agents/
 .claude/
+
+# Mastra local storage (libSQL)
+.gasti/
+*.db
+*.db-journal
+*.db-wal
+*.db-shm
