@@ -1,5 +1,7 @@
 import type { ReplyEvent } from '@/chat/domain/chat-repository';
 import type { GastiMessage, MessageAttachment, ToolCall } from '@/chat/domain/message';
+import type { Transaction } from '@/transactions/domain/transaction';
+import type { BudgetProgress } from '@/budgets/domain/budget-progress';
 
 /**
  * A Mastra stream chunk: `{ type, payload }`. `payload` is `unknown` so that
@@ -9,13 +11,15 @@ import type { GastiMessage, MessageAttachment, ToolCall } from '@/chat/domain/me
  */
 export type MastraChunk = { type: string; payload?: unknown };
 
+type ChunkPayload = Record<string, unknown>;
+const str = (v: unknown): string => (typeof v === 'string' ? v : '');
+const rec = (v: unknown): Record<string, unknown> =>
+  v && typeof v === 'object' ? (v as Record<string, unknown>) : {};
+
 const ATTACHMENT_KINDS = new Set(['transactionList', 'budgetProgress', 'optionPills']);
 
-/**
- * A tool's display payload is already attachment-shaped (the agent's tools use
- * Mastra `transform.display.output`). Pass it through when its `kind` is known.
- */
-function toAttachment(result: unknown): MessageAttachment | null {
+/** A payload that already carries a known attachment `kind` — pass it through. */
+function asDisplayAttachment(result: unknown): MessageAttachment | null {
   if (result && typeof result === 'object' && 'kind' in result) {
     const kind = (result as { kind: unknown }).kind;
     if (typeof kind === 'string' && ATTACHMENT_KINDS.has(kind)) {
@@ -25,10 +29,48 @@ function toAttachment(result: unknown): MessageAttachment | null {
   return null;
 }
 
-type ChunkPayload = Record<string, unknown>;
-const str = (v: unknown): string => (typeof v === 'string' ? v : '');
-const rec = (v: unknown): Record<string, unknown> =>
-  v && typeof v === 'object' ? (v as Record<string, unknown>) : {};
+/**
+ * Maps a tool's `tool-result` output to a UI attachment. Mastra streams the raw
+ * tool output (not the agent's `transform.display` payload), so the three
+ * display transforms from `apps/ai` are mirrored here, keyed by tool name. A
+ * gateway error envelope (`{ error: true }`) yields no attachment.
+ */
+function toAttachment(toolName: string, result: unknown): MessageAttachment | null {
+  const direct = asDisplayAttachment(result);
+  if (direct) return direct;
+
+  const r = rec(result);
+  if (r.error === true) return null;
+
+  switch (toolName) {
+    case 'listTransactions': {
+      const items = Array.isArray(r.transactions) ? (r.transactions as Transaction[]) : [];
+      return items.length ? { kind: 'transactionList', items } : null;
+    }
+    case 'getBudgetProgress': {
+      const items = Array.isArray(r.items) ? r.items : [];
+      const progress = items[0] as BudgetProgress | undefined;
+      return progress ? { kind: 'budgetProgress', progress } : null;
+    }
+    case 'proposeTransactionMutation': {
+      const matches = Array.isArray(r.matches) ? (r.matches as Transaction[]) : [];
+      const intent = str(r.intent);
+      if (matches.length === 1) {
+        const confirmLabel = intent === 'delete' ? 'Sí, borralo' : 'Sí, guardá los cambios';
+        return {
+          kind: 'optionPills',
+          options: [
+            { id: `confirm:${intent}:${matches[0].id}`, label: confirmLabel, intent: 'confirm' },
+            { id: 'cancel', label: 'Cancelar', intent: 'cancel' },
+          ],
+        };
+      }
+      return matches.length ? { kind: 'transactionList', items: matches } : null;
+    }
+    default:
+      return null;
+  }
+}
 
 /**
  * Builds a stateful mapper. Feed every Mastra chunk to `onChunk`; call `end`
@@ -61,7 +103,7 @@ export function createReplyEventMapper(makeId: () => string, now: () => Date) {
         break;
       }
       case 'tool-result': {
-        const attachment = toAttachment(payload.result);
+        const attachment = toAttachment(str(payload.toolName), payload.result);
         if (attachment) attachments.push(attachment);
         break;
       }
