@@ -1,4 +1,4 @@
-import { LibSQLStore } from '@mastra/libsql';
+import { LibSQLStore, LibSQLVector } from '@mastra/libsql';
 import { existsSync, mkdirSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -53,6 +53,17 @@ export function buildMastraStorage() {
 
   return new LibSQLStore({
     id: 'gasti-storage',
+    url,
+  });
+}
+
+/** Vector store for semantic recall — shares the same libSQL file as the store. */
+export function buildMastraVector() {
+  const url = resolveDbUrl();
+  ensureParentDir(url);
+
+  return new LibSQLVector({
+    id: 'gasti-vector',
     url,
   });
 }
