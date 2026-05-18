@@ -2,17 +2,30 @@ import { Injectable } from '@nestjs/common';
 import type { PendingPrompt } from '../domain/pending-prompt';
 import type { ProactiveEventBus } from '../domain/proactive-event-bus';
 
+type Handler = (p: PendingPrompt) => void;
+
 @Injectable()
 export class InMemoryProactiveEventBus implements ProactiveEventBus {
-  private byUser = new Map<string, Set<(p: PendingPrompt) => void>>();
+  private byUser = new Map<string, Set<Handler>>();
 
   publish(userId: string, prompt: PendingPrompt): void {
-    this.byUser.get(userId)?.forEach((fn) => fn(prompt));
+    const set = this.byUser.get(userId);
+    if (!set) return;
+    // Snapshot: a handler may subscribe/unsubscribe during dispatch.
+    for (const fn of [...set]) fn(prompt);
   }
 
-  subscribe(userId: string, fn: (p: PendingPrompt) => void): () => void {
-    if (!this.byUser.has(userId)) this.byUser.set(userId, new Set());
-    this.byUser.get(userId)!.add(fn);
-    return () => this.byUser.get(userId)?.delete(fn);
+  subscribe(userId: string, fn: Handler): () => void {
+    let set = this.byUser.get(userId);
+    if (!set) {
+      set = new Set();
+      this.byUser.set(userId, set);
+    }
+    set.add(fn);
+    return () => {
+      set!.delete(fn);
+      // Reclaim the bucket once empty so the Map doesn't grow one entry per user forever.
+      if (set!.size === 0) this.byUser.delete(userId);
+    };
   }
 }
