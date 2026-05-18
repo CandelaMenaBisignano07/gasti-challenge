@@ -19,6 +19,7 @@ export function makeGastiAgent({ tools, memory }: GastiAgentDeps) {
       today: z.string(),
       userId: z.string(),
       categories: z.array(z.string()),
+      sessionResumed: z.boolean().optional(),
     }),
     tools: tools as never,
     ...(memory ? { memory } : {}),
