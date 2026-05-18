@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { randomUUID } from 'node:crypto';
 import { createJsonStore, type JsonStore } from '../../shared/providers/json-store';
-import { PENDING_PROMPTS_FILE } from '../../shared/providers/paths';
+import { pendingPromptsFile } from '../../shared/providers/paths';
 import type { PendingPrompt, NoticeReason } from '../domain/pending-prompt';
 import type {
   NewPendingPrompt,
@@ -11,7 +11,7 @@ import type {
 @Injectable()
 export class JsonPendingPromptsRepository implements PendingPromptsRepository {
   private readonly store: JsonStore<PendingPrompt[]> = createJsonStore<PendingPrompt[]>(
-    PENDING_PROMPTS_FILE,
+    pendingPromptsFile(),
     [],
   );
 
@@ -61,7 +61,12 @@ export class JsonPendingPromptsRepository implements PendingPromptsRepository {
     });
   }
 
-  markDiscarded(id: string, _reason?: NoticeReason): Promise<void> {
-    return this.patch(id, { status: 'discarded', resolvedAt: new Date().toISOString() });
+  markDiscarded(id: string, reason?: NoticeReason): Promise<void> {
+    return this.patch(id, {
+      status: 'discarded',
+      resolvedAt: new Date().toISOString(),
+      // Persist the reversal reason when a refund/chargeback discarded the prompt.
+      ...(reason ? { noticeReason: reason } : {}),
+    });
   }
 }

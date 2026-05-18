@@ -1,6 +1,6 @@
 import { Inject, Injectable, Logger } from '@nestjs/common';
 import { createJsonStore, type JsonStore } from '../../shared/providers/json-store';
-import { USERS_FILE } from '../../shared/providers/paths';
+import { usersFile } from '../../shared/providers/paths';
 import { TOKEN_CIPHER, type TokenCipherDep } from '../../shared/security/token-cipher.token';
 import type { EncryptedToken } from '../../shared/security/token-cipher';
 import { DEFAULT_USER_ID, type User } from '../domain/user';
@@ -30,7 +30,7 @@ const seedRow: UserRow = Object.freeze({
 @Injectable()
 export class JsonUsersRepository implements UsersRepository {
   private readonly log = new Logger(JsonUsersRepository.name);
-  private readonly store: JsonStore<UserRow[]> = createJsonStore<UserRow[]>(USERS_FILE, [seedRow]);
+  private readonly store: JsonStore<UserRow[]> = createJsonStore<UserRow[]>(usersFile(), [seedRow]);
 
   constructor(@Inject(TOKEN_CIPHER) private readonly cipher: TokenCipherDep) {}
 

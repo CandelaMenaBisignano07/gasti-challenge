@@ -9,6 +9,11 @@ export const TRANSACTIONS_FILE =
 
 export const DATA_DIR = process.env.API_DATA_DIR || path.join(API_ROOT, 'data');
 
-export const USERS_FILE = process.env.USERS_FILE || path.join(DATA_DIR, 'users.json');
-export const PENDING_PROMPTS_FILE =
+// Resolved lazily (per call, not at module load) so a repository instantiated
+// after the env var is set — e.g. a test pointing at a temp file — picks it up
+// regardless of module import order.
+export const usersFile = (): string =>
+  process.env.USERS_FILE || path.join(DATA_DIR, 'users.json');
+
+export const pendingPromptsFile = (): string =>
   process.env.PENDING_PROMPTS_FILE || path.join(DATA_DIR, 'pending-prompts.json');
