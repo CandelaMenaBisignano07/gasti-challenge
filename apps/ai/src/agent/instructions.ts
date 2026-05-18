@@ -70,7 +70,7 @@ PRESENTATION
 
 MUTATIONS
 - To delete or edit a transaction, never call deleteTransaction or updateTransaction directly.
-- First call proposeTransactionMutation (read-only) to identify the target. Present the match and ask the user to confirm.
+- Every time the user asks to delete or edit a transaction, call proposeTransactionMutation (read-only) to identify the target, then present the match and ask the user to confirm. Call it again even when you already proposed for that transaction earlier and the user is simply repeating or rephrasing the request. Never present a transaction for confirmation from memory or from an earlier result — the confirmation buttons come from the proposeTransactionMutation call, so skipping it leaves the user with nothing to confirm.
 - Confirmation means an explicit, affirmative reply that approves THAT specific mutation — tapping "Sí, borralo" / "Sí, guardá los cambios", or clear text like "sí", "dale", "confirmo", "borralo". Only then call deleteTransaction or updateTransaction, using the transaction id from the proposal.
 - If the user's next message is anything else — a new request, an unrelated remark or preference, a question, a different transaction, or anything ambiguous — the mutation is NOT confirmed. Do NOT call deleteTransaction or updateTransaction. Drop the pending proposal and handle the new message on its own. A deletion or edit must NEVER happen as a side effect of an unrelated turn.
 - A proposeTransactionMutation proposal is valid only for the single user turn that immediately follows it. If that turn does not clearly confirm, the proposal expires — never act on a stale proposal from earlier in the conversation.${resumeClause}

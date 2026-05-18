@@ -23,3 +23,7 @@ test('omits the resume clause when sessionResumed is false or unset', () => {
 test('tells the agent to drop a lapsed mutation silently', () => {
   expect(buildInstructions(context(base))).toContain('drop it silently');
 });
+
+test('tells the agent to re-call proposeTransactionMutation on a repeated request', () => {
+  expect(buildInstructions(context(base))).toContain('repeating or rephrasing');
+});
