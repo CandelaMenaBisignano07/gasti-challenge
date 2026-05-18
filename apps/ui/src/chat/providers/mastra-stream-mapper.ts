@@ -1,8 +1,13 @@
 import type { ReplyEvent } from '@/chat/domain/chat-repository';
 import type { GastiMessage, MessageAttachment, ToolCall } from '@/chat/domain/message';
 
-/** A Mastra stream chunk: `{ type, payload }`. Payload shape varies by type. */
-export type MastraChunk = { type: string; payload?: Record<string, unknown> };
+/**
+ * A Mastra stream chunk: `{ type, payload }`. `payload` is `unknown` so that
+ * `@mastra/client-js`'s concretely-typed `ChunkType` union is assignable here
+ * (its typed payloads have no string index signature). The mapper narrows
+ * `payload` per chunk via the `rec()` helper.
+ */
+export type MastraChunk = { type: string; payload?: unknown };
 
 const ATTACHMENT_KINDS = new Set(['transactionList', 'budgetProgress', 'optionPills']);
 
@@ -42,7 +47,7 @@ export function createReplyEventMapper(makeId: () => string, now: () => Date) {
       started = true;
       events.push({ kind: 'thinking' });
     }
-    const payload: ChunkPayload = chunk.payload ?? {};
+    const payload: ChunkPayload = rec(chunk.payload);
 
     switch (chunk.type) {
       case 'tool-call': {
