@@ -40,7 +40,7 @@ test('declare recurring income sets the monthly figure', async () => {
     kind: 'recurring',
     amount: 1_500_000,
   });
-  expect(result).toEqual({ kind: 'recurring', amount: 1_500_000 });
+  expect(result).toEqual({ kind: 'recurring', amount: 1_500_000, date: null, description: null });
   expect((await repo.get()).recurringMonthly).toBe(1_500_000);
 });
 
@@ -64,4 +64,14 @@ test('cash-flow computes net and savings rate from a full calendar month of recu
   expect(result.income).toBe(600_000);
   expect(result.net).toBe(300_000);
   expect(result.savingsRate).toBe(0.5);
+});
+
+test('cash-flow counts a full month of recurring income for a partial current month', async () => {
+  const result = await new GetCashFlow(
+    fakeIncomeRepo({ recurringMonthly: 50_000 }),
+    fakeTransactionsRepo([tx('txn_001', '2026-05-05', 10_000)]),
+    new PeriodResolver(fixedClock('2026-05-17')),
+  ).execute({ period: { kind: 'currentMonth' } });
+  expect(result.income).toBe(50_000);
+  expect(result.net).toBe(40_000);
 });

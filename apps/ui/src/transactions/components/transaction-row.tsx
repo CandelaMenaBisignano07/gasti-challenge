@@ -24,7 +24,7 @@ export function TransactionRow({ transaction }: TransactionRowProps) {
       </div>
 
       <div className="flex flex-col items-end">
-        <Num value={amount} size="sm" signed />
+        <Num value={amount} size="sm" />
         <span className="font-display text-[12px] font-medium tracking-label text-ink-3">
           {category.charAt(0).toUpperCase() + category.slice(1)}
         </span>

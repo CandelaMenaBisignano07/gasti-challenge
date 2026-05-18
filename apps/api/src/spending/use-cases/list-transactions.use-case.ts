@@ -11,7 +11,7 @@ import {
 
 export interface ListTransactionsInput {
   merchant?: string;
-  category?: Category;
+  categories?: Category[];
   period: Period;
   limit?: number;
 }
@@ -33,8 +33,9 @@ export class ListTransactions {
       const needle = input.merchant.toLowerCase();
       matches = matches.filter((t) => t.merchant.toLowerCase().includes(needle));
     }
-    if (input.category) {
-      matches = matches.filter((t) => cats.get(t.id) === input.category);
+    if (input.categories && input.categories.length > 0) {
+      const wanted = new Set(input.categories);
+      matches = matches.filter((t) => wanted.has(cats.get(t.id)!));
     }
     matches.sort((a, b) => b.date.localeCompare(a.date));
     const total = matches.reduce((s, t) => s + t.amount, 0);
