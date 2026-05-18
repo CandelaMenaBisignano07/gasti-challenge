@@ -1,0 +1,27 @@
+/** Minimal local shape of a Mercado Pago payment — only the fields we read. */
+export interface MpPayment {
+  id: number | string;
+  status:
+    | 'pending'
+    | 'approved'
+    | 'authorized'
+    | 'in_process'
+    | 'in_mediation'
+    | 'rejected'
+    | 'cancelled'
+    | 'refunded'
+    | 'charged_back';
+  status_detail: string;
+  captured?: boolean;
+  transaction_amount: number;
+  description?: string | null;
+  date_approved?: string | null;
+  date_created?: string | null;
+  collector_id?: number | null;
+  payer?: {
+    first_name?: string | null;
+    last_name?: string | null;
+    email?: string | null;
+  } | null;
+  additional_info?: { items?: Array<{ title?: string }> | null } | null;
+}
