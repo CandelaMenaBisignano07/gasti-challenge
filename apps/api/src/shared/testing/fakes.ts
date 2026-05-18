@@ -60,5 +60,13 @@ export function fakeCategorizationRepo(
     async setTransaction(transactionId, category: Category) {
       data.transactions[transactionId] = category;
     },
+    async reassignCategory(from: Category, to: Category) {
+      for (const m of Object.keys(data.merchants)) {
+        if (data.merchants[m] === from) data.merchants[m] = to;
+      }
+      for (const id of Object.keys(data.transactions)) {
+        if (data.transactions[id] === from) data.transactions[id] = to;
+      }
+    },
   };
 }

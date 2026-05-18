@@ -11,6 +11,8 @@ export interface CategorizationRepository {
   overrides(): Promise<CategoryOverrides>;
   setMerchant(merchant: string, category: Category): Promise<void>;
   setTransaction(transactionId: string, category: Category): Promise<void>;
+  /** Rewrite every merchant/transaction override whose value is `from` to `to`. */
+  reassignCategory(from: Category, to: Category): Promise<void>;
 }
 
 export const EMPTY_OVERRIDES: CategoryOverrides = { merchants: {}, transactions: {} };

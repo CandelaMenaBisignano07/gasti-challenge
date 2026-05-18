@@ -31,4 +31,15 @@ export class JsonCategorizationRepository implements CategorizationRepository {
     data.transactions[transactionId] = category;
     await this.store.write(data);
   }
+
+  async reassignCategory(from: Category, to: Category): Promise<void> {
+    const data = await this.store.read();
+    for (const m of Object.keys(data.merchants)) {
+      if (data.merchants[m] === from) data.merchants[m] = to;
+    }
+    for (const id of Object.keys(data.transactions)) {
+      if (data.transactions[id] === from) data.transactions[id] = to;
+    }
+    await this.store.write(data);
+  }
 }
