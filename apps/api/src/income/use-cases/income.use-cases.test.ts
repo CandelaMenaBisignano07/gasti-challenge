@@ -49,7 +49,7 @@ test('cash-flow returns a null savings rate when no income is declared', async (
     fakeIncomeRepo(),
     fakeTransactionsRepo([tx('txn_001', '2026-05-05', 10000)]),
     new PeriodResolver(fixedClock('2026-05-17')),
-  ).execute({ period: { kind: 'calendarMonth', month: '2026-05' } });
+  ).execute({ period: { kind: 'month', month: '2026-05' } });
   expect(result.expenses).toBe(10000);
   expect(result.income).toBe(0);
   expect(result.savingsRate).toBeNull();
@@ -60,7 +60,7 @@ test('cash-flow computes net and savings rate from a full calendar month of recu
     fakeIncomeRepo({ recurringMonthly: 600_000 }),
     fakeTransactionsRepo([tx('txn_001', '2026-04-05', 300_000)]),
     new PeriodResolver(fixedClock('2026-05-17')),
-  ).execute({ period: { kind: 'calendarMonth', month: '2026-04' } });
+  ).execute({ period: { kind: 'month', month: '2026-04' } });
   expect(result.income).toBe(600_000);
   expect(result.net).toBe(300_000);
   expect(result.savingsRate).toBe(0.5);
