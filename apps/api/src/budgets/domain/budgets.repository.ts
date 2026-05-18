@@ -7,4 +7,8 @@ export interface BudgetsRepository {
   forMonth(month: string): Promise<Partial<Record<Category, number>>>;
   set(month: string, category: Category, amount: number): Promise<void>;
   clear(month: string, category: Category): Promise<void>;
+  /** Move the budget under `from` to `to`, in every month it appears. */
+  reassignCategory(from: string, to: string): Promise<void>;
+  /** Remove the budget under `category`, in every month. */
+  clearCategory(category: string): Promise<void>;
 }

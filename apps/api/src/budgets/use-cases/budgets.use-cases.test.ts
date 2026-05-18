@@ -2,25 +2,14 @@ import { test, expect } from 'bun:test';
 import { SetBudget } from './set-budget.use-case';
 import { GetBudgetProgress } from './budget-progress.use-case';
 import { CategoryResolver } from '../../shared/providers/category-resolver';
-import { fakeCategorizationRepo, fakeTransactionsRepo, fixedClock } from '../../shared/testing/fakes';
-import type { BudgetsRepository } from '../domain/budgets.repository';
+import {
+  fakeBudgetsRepo,
+  fakeCategorizationRepo,
+  fakeTransactionsRepo,
+  fixedClock,
+} from '../../shared/testing/fakes';
 import type { Category } from '../../shared/domain/category';
 import type { Transaction } from '../../shared/domain/transaction';
-
-function fakeBudgetsRepo(seed: Record<string, Record<string, number>> = {}): BudgetsRepository {
-  const data = JSON.parse(JSON.stringify(seed)) as Record<string, Record<string, number>>;
-  return {
-    async forMonth(month) {
-      return (data[month] ?? {}) as Partial<Record<Category, number>>;
-    },
-    async set(month, category, amount) {
-      data[month] = { ...(data[month] ?? {}), [category]: amount };
-    },
-    async clear(month, category) {
-      if (data[month]) delete data[month][category];
-    },
-  };
-}
 
 const tx = (id: string, date: string, amount: number): Transaction => ({
   id,

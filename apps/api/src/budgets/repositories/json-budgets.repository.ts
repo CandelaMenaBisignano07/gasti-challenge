@@ -29,4 +29,21 @@ export class JsonBudgetsRepository implements BudgetsRepository {
     if (data[month]) delete data[month][category];
     await this.store.write(data);
   }
+
+  async reassignCategory(from: string, to: string): Promise<void> {
+    const data = await this.store.read();
+    for (const month of Object.keys(data)) {
+      if (data[month][from] !== undefined) {
+        data[month][to] = data[month][from];
+        delete data[month][from];
+      }
+    }
+    await this.store.write(data);
+  }
+
+  async clearCategory(category: string): Promise<void> {
+    const data = await this.store.read();
+    for (const month of Object.keys(data)) delete data[month][category];
+    await this.store.write(data);
+  }
 }

@@ -9,6 +9,7 @@ import type {
   CategorizationRepository,
   CategoryOverrides,
 } from '../domain/category-overrides';
+import type { BudgetsRepository } from '../../budgets/domain/budgets.repository';
 
 export function fixedClock(iso: string): Clock {
   return { now: () => new Date(`${iso}T12:00:00.000Z`) };
@@ -67,6 +68,34 @@ export function fakeCategorizationRepo(
       for (const id of Object.keys(data.transactions)) {
         if (data.transactions[id] === from) data.transactions[id] = to;
       }
+    },
+  };
+}
+
+export function fakeBudgetsRepo(
+  seed: Record<string, Record<string, number>> = {},
+): BudgetsRepository {
+  const data = JSON.parse(JSON.stringify(seed)) as Record<string, Record<string, number>>;
+  return {
+    async forMonth(month) {
+      return (data[month] ?? {}) as Partial<Record<Category, number>>;
+    },
+    async set(month, category, amount) {
+      data[month] = { ...(data[month] ?? {}), [category]: amount };
+    },
+    async clear(month, category) {
+      if (data[month]) delete data[month][category];
+    },
+    async reassignCategory(from, to) {
+      for (const month of Object.keys(data)) {
+        if (data[month][from] !== undefined) {
+          data[month][to] = data[month][from];
+          delete data[month][from];
+        }
+      }
+    },
+    async clearCategory(category) {
+      for (const month of Object.keys(data)) delete data[month][category];
     },
   };
 }
