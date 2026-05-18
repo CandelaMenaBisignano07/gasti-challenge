@@ -12,7 +12,7 @@ type Deps = {
 };
 
 export function makeSendUserMessage({ repo, now = () => new Date(), makeId = defaultId }: Deps) {
-  return async function* sendUserMessage(req: { text: string; history: Message[] }): AsyncIterable<DispatchedEvent> {
+  return async function* sendUserMessage(req: { text: string; history: Message[]; sessionResumed?: boolean }): AsyncIterable<DispatchedEvent> {
     const trimmed = req.text.trim();
     if (!trimmed) return;
 
@@ -24,7 +24,7 @@ export function makeSendUserMessage({ repo, now = () => new Date(), makeId = def
     };
     yield { kind: 'appendUser', message: userMessage };
 
-    for await (const ev of repo.reply({ text: trimmed, history: [...req.history, userMessage] })) {
+    for await (const ev of repo.reply({ text: trimmed, history: [...req.history, userMessage], sessionResumed: req.sessionResumed })) {
       yield ev;
     }
   };
