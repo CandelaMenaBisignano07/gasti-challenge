@@ -46,4 +46,16 @@ export class JsonTransactionsRepository implements TransactionsRepository {
     }, 0);
     return `txn_${String(max + 1).padStart(3, '0')}`;
   }
+
+  async reassignCategory(from: string, to: string): Promise<void> {
+    const txs = await this.store.read();
+    let changed = false;
+    for (const t of txs) {
+      if (t.category === from) {
+        t.category = to;
+        changed = true;
+      }
+    }
+    if (changed) await this.store.write(txs);
+  }
 }

@@ -37,6 +37,9 @@ export function fakeTransactionsRepo(seed: Transaction[] = []): TransactionsRepo
     async nextId() {
       return `txn_${String(txs.length + 1).padStart(3, '0')}`;
     },
+    async reassignCategory(from, to) {
+      for (const t of txs) if (t.category === from) t.category = to;
+    },
   };
 }
 

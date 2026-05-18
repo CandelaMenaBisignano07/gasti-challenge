@@ -10,4 +10,6 @@ export interface TransactionsRepository {
   update(id: string, fields: TransactionFields): Promise<Transaction | null>;
   delete(id: string): Promise<boolean>;
   nextId(): Promise<string>;
+  /** Rewrite the base category of every transaction whose category is `from`. */
+  reassignCategory(from: string, to: string): Promise<void>;
 }
