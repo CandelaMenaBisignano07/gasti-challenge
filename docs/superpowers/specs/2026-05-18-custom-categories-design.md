@@ -53,6 +53,11 @@ Because a category is now open-ended, the hard `categorySchema` Zod enum becomes
 an open string, and "is this a valid category?" moves from schema validation to
 a **runtime registry check inside use-cases**.
 
+Custom-category management (create / rename / delete / list) is **folded into
+the existing `categorization/` feature** in both apps — it is the same bounded
+context. New use-cases, controller routes, gateway methods, and tools extend the
+files already there; no separate `categories/` feature folder is created.
+
 Rejected alternatives:
 
 - **Custom categories as a separate parallel dimension** — that is the tags
@@ -91,14 +96,16 @@ The change:
   lowercase. Constraints: 1–24 characters after normalization; must not collide
   with an existing category (default or custom).
 
-## `apps/api` — new `categories/` feature
+## `apps/api` — extend the `categorization/` feature
 
-Feature folder `apps/api/src/categories/`, following Clean Architecture
-layering and mirroring the `categorization` feature.
+All new files land inside the existing `apps/api/src/categorization/` feature
+folder, alongside the override use-cases.
 
 ### domain
 
-`domain/categories.repository.ts`:
+`shared/domain/custom-categories.ts` (in `shared/domain`, so the `shared`-level
+`CategoryRegistry` depends only on a shared contract — exactly as
+`CategorizationRepository` lives in `shared/domain/category-overrides.ts`):
 
 - `CATEGORIES_REPOSITORY` injection token.
 - `CustomCategories` type (`string[]`) and `EMPTY_CUSTOM_CATEGORIES = []`.
@@ -110,8 +117,9 @@ layering and mirroring the `categorization` feature.
 
 ### repositories
 
-`repositories/json-categories.repository.ts` — `JsonCategoriesRepository` over
-`createJsonStore` against `custom-categories.json`, default `[]`.
+`categorization/repositories/json-categories.repository.ts` —
+`JsonCategoriesRepository` over `createJsonStore` against
+`custom-categories.json`, default `[]`.
 
 ### providers
 
@@ -126,10 +134,12 @@ layering and mirroring the `categorization` feature.
 The seven default slugs are defined as a constant
 (`DEFAULT_CATEGORIES`) in `shared/domain/category.ts`.
 
-`categories/providers/category-name.ts` — pure `normalizeCategoryName(raw)`
+`categorization/providers/category-name.ts` — pure `normalizeCategoryName(raw)`
 helper (trim, collapse whitespace, lowercase).
 
 ### use-cases
+
+These live in `categorization/use-cases/`, alongside the override use-cases.
 
 - `CreateCategory` — input `{ name }`. Normalizes the name, validates length,
   rejects (`DomainError`) if it collides with an existing default or custom
@@ -167,35 +177,45 @@ category:
 
 ### interface
 
-- `interface/categories.controller.ts` — `@Controller('categories')`, thin POST
-  handlers: `/categories/create`, `/categories/rename`, `/categories/delete`,
-  `/categories/list`.
-- `interface/categories.schemas.ts` — Zod input schemas.
+The existing `categorization` interface files are extended — no new files:
+
+- `categorization/interface/categorization.schemas.ts` gains the
+  create/rename/delete Zod input schemas.
+- `categorization/interface/categorization.controller.ts` (`@Controller(
+  'categorization')`) gains four routes: `/categorization/create-category`,
+  `/categorization/rename-category`, `/categorization/delete-category`,
+  `/categorization/list-categories`.
 
 ### module
 
-`categories.module.ts` imports `TransactionsModule`, `CategorizationModule`,
-and `BudgetsModule` (for the cascade repositories), binds
-`CATEGORIES_REPOSITORY`, and registers the four use-cases. The
-`CategoryRegistry` provider is added to the `@Global() SharedModule` so every
-feature can inject it. `CategoriesModule` is registered in `app.module.ts`.
+The four new use-cases are registered in the existing `CategorizationModule`,
+which additionally imports `BudgetsModule` (for the cascade). `BudgetsModule`
+exports `BUDGETS_REPOSITORY`. `CATEGORIES_REPOSITORY` (bound to
+`JsonCategoriesRepository`) and the `CategoryRegistry` provider are added to the
+`@Global() SharedModule` so every feature can inject them — mirroring how
+`CATEGORIZATION_REPOSITORY` and `CategoryResolver` are already global. No new
+module and no `app.module.ts` change (`CategorizationModule` is already
+registered).
 
-## `apps/ai` — new `categories/` feature
+## `apps/ai` — extend the `categorization/` feature
 
-Feature folder `apps/ai/src/categories/`, mirroring `apps/ai/src/categorization/`.
+The existing `apps/ai/src/categorization/` files are extended — no new feature
+folder:
 
-- `domain/categories.gateway.ts` — Zod schemas + `CategoriesGateway` interface
-  (`create`, `rename`, `remove`, `list`).
-- `providers/http-categories.gateway.ts` — `makeHttpCategoriesGateway` via
-  `makeHttpGateway`, mapping to `/categories/create`, `/categories/rename`,
-  `/categories/delete`, `/categories/list`.
-- `interface/categories.tools.ts` — `makeCategoriesTools` exposing four tools:
-  `createCategory`, `renameCategory`, `deleteCategory`, `listCategories`.
+- `domain/categorization.gateway.ts` gains the create/rename/delete/list Zod
+  schemas and four methods on the `CategorizationGateway` interface (`create`,
+  `rename`, `remove`, `list`).
+- `providers/http-categorization.gateway.ts` gains the four routes, mapping to
+  `/categorization/create-category`, `/categorization/rename-category`,
+  `/categorization/delete-category`, `/categorization/list-categories`.
+- `interface/categorization.tools.ts` — `makeCategorizationTools` gains four
+  tools: `createCategory`, `renameCategory`, `deleteCategory`, `listCategories`.
   Like budgets and overrides, these are direct conversational mutations with no
   proposal/confirmation step; the agent confirms the action plainly afterward.
   `deleteCategory` carries a cascade, so the agent should state plainly what it
   does (assignments fall back to `otros`) before calling it.
-- Wired into `mastra/index.ts`.
+- Already wired into `mastra/index.ts` via the existing
+  `makeCategorizationTools(...)` call.
 
 Assignment of a custom category to a transaction continues to use the existing
 `addTransaction` / `updateTransaction` / `overrideMerchantCategory` /
