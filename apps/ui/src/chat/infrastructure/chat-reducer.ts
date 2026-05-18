@@ -7,12 +7,19 @@ export type ChatState = {
   status: ChatStatus;
   /** The Gasti reply being streamed in; null when no reply is in flight. */
   streamingMessage: GastiMessage | null;
+  /**
+   * Which screen to show. Starts on the landing hero even when `messages` is
+   * already populated from a restored thread; flips to 'conversation' on the
+   * user's first message this session.
+   */
+  view: 'landing' | 'conversation';
 };
 
 export const initialChatState: ChatState = {
   messages: [],
   status: 'idle',
   streamingMessage: null,
+  view: 'landing',
 };
 
 export type ChatAction =
@@ -22,6 +29,8 @@ export type ChatAction =
   | { type: 'APPEND_PARTIAL'; text: string }
   | { type: 'APPEND_GASTI'; message: GastiMessage }
   | { type: 'RESOLVE_LAST_OPTIONS' }
+  | { type: 'HYDRATE_HISTORY'; messages: Message[] }
+  | { type: 'ENTER_CONVERSATION' }
   | { type: 'RESET' };
 
 /** Starts a fresh in-progress Gasti message. */
@@ -85,6 +94,12 @@ export function chatReducer(state: ChatState, action: ChatAction): ChatState {
       }
       return { ...state, messages: next };
     }
+
+    case 'HYDRATE_HISTORY':
+      return { ...state, messages: action.messages };
+
+    case 'ENTER_CONVERSATION':
+      return state.view === 'conversation' ? state : { ...state, view: 'conversation' };
 
     case 'RESET':
       return initialChatState;

@@ -41,7 +41,16 @@ function resolveOptionLabel(optionId: string, history: Message[]): string {
 
 export class AgentChatRepository implements ChatRepository {
   async loadInitial(): Promise<Conversation> {
-    return { id: 'conv-1', messages: [], startedAt: new Date().toISOString() };
+    const startedAt = new Date().toISOString();
+    try {
+      const params = new URLSearchParams({ threadId: getThreadId() });
+      const response = await fetch(`/api/chat?${params}`);
+      if (!response.ok) return { id: 'conv-1', messages: [], startedAt };
+      const data = (await response.json()) as { messages: Message[] };
+      return { id: 'conv-1', messages: data.messages ?? [], startedAt };
+    } catch {
+      return { id: 'conv-1', messages: [], startedAt };
+    }
   }
 
   reply(input: { text: string; history: Message[] }): AsyncIterable<ReplyEvent> {

@@ -1,10 +1,11 @@
 'use client';
 
-import { createContext, useCallback, useMemo, useReducer, type ReactNode } from 'react';
+import { createContext, useCallback, useEffect, useMemo, useReducer, useRef, type ReactNode } from 'react';
 import { chatReducer, initialChatState, type ChatState } from '@/chat/infrastructure/chat-reducer';
 import { AgentChatRepository } from '@/chat/repositories/agent-chat-repository';
 import { makeSendUserMessage } from '@/chat/use-cases/send-user-message';
 import { makeConfirmMutation } from '@/chat/use-cases/confirm-mutation';
+import { makeLoadInitialConversation } from '@/chat/use-cases/load-initial-conversation';
 
 export type ChatContextValue = ChatState & {
   sendMessage: (text: string) => Promise<void>;
@@ -17,11 +18,26 @@ export function ChatProvider({ children }: { children: ReactNode }) {
   const repo = useMemo(() => new AgentChatRepository(), []);
   const sendUserMessage = useMemo(() => makeSendUserMessage({ repo }), [repo]);
   const confirmMutation = useMemo(() => makeConfirmMutation({ repo }), [repo]);
+  const loadInitialConversation = useMemo(() => makeLoadInitialConversation({ repo }), [repo]);
 
   const [state, dispatch] = useReducer(chatReducer, initialChatState);
 
+  // Restore the persisted thread once on mount. The promise is held in a ref so
+  // the first send can await it — HYDRATE_HISTORY replaces `messages` wholesale,
+  // so it must land before any APPEND_USER or the new message would be lost.
+  const historyLoaded = useRef<Promise<void> | undefined>(undefined);
+  useEffect(() => {
+    historyLoaded.current = loadInitialConversation()
+      .then((conv) => {
+        dispatch({ type: 'HYDRATE_HISTORY', messages: conv.messages });
+      })
+      .catch(() => {});
+  }, [loadInitialConversation]);
+
   const sendMessage = useCallback(
     async (text: string) => {
+      await historyLoaded.current;
+      dispatch({ type: 'ENTER_CONVERSATION' });
       // Typing a new message instead of picking a pill retires any open pills.
       dispatch({ type: 'RESOLVE_LAST_OPTIONS' });
       for await (const ev of sendUserMessage({ text, history: state.messages })) {
@@ -49,6 +65,8 @@ export function ChatProvider({ children }: { children: ReactNode }) {
 
   const pickOption = useCallback(
     async (optionId: string) => {
+      await historyLoaded.current;
+      dispatch({ type: 'ENTER_CONVERSATION' });
       for await (const ev of confirmMutation({ optionId, history: state.messages })) {
         switch (ev.kind) {
           case 'resolvePrevOptions':
