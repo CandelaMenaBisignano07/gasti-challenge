@@ -114,7 +114,12 @@ Stack del starter: **Bun** workspaces + **Turborepo** + **TypeScript** en todo.
 ```bash
 bun install
 cp apps/ai/.env.example apps/ai/.env   # agregá tu OPENAI_API_KEY (o el provider que uses)
+cp apps/api/.env.example apps/api/.env # credenciales Mercado Pago (ver sección abajo)
+cp apps/ui/.env.example apps/ui/.env   # NEXT_PUBLIC_API_BASE_URL (default http://localhost:3001)
 ```
+
+Sin `apps/api/.env` el API arranca igual para los flujos base, pero la integración
+con Mercado Pago necesita `TOKEN_ENCRYPTION_KEY` y `MP_WEBHOOK_SECRET` definidos.
 
 ## Run
 
@@ -124,6 +129,49 @@ bun dev --filter=api       # NestJS         → http://localhost:3001/health
 bun dev --filter=ui        # Next.js        → http://localhost:3000
 bun dev --filter=ai        # Mastra dev     → playground local
 ```
+
+## Mercado Pago
+
+Gasti se conecta a Mercado Pago para detectar pagos en tiempo real: el usuario
+vincula su cuenta vía OAuth y MP avisa cada pago por webhook. Gasti clasifica el
+movimiento y propone sumarlo como transacción.
+
+### Variables de entorno
+
+`apps/api/.env` (copiá de `.env.example`):
+
+| Variable | Para qué |
+|---|---|
+| `MP_CLIENT_ID` / `MP_CLIENT_SECRET` | Credenciales de tu app en el panel de MP |
+| `MP_REDIRECT_URI` | Callback OAuth — debe coincidir exacto: `<ngrok>/mp/oauth/callback` |
+| `MP_WEBHOOK_SECRET` | Secreto de firma para verificar webhooks entrantes (panel MP → Webhooks) |
+| `TOKEN_ENCRYPTION_KEY` | Clave AES-256-GCM (32 bytes base64) para cifrar tokens en disco |
+| `AI_BASE_URL` | Server Mastra del clasificador (default `http://localhost:4111`) |
+| `UI_BASE_URL` | Frontend al que vuelve el callback OAuth (default `http://localhost:3000`) |
+
+`apps/ui/.env`: `NEXT_PUBLIC_API_BASE_URL` (default `http://localhost:3001`).
+
+Generá la clave de cifrado:
+
+```bash
+node -e "console.log(require('crypto').randomBytes(32).toString('base64'))"
+```
+
+### Exponer el API con un túnel
+
+MP necesita una URL pública para mandar webhooks y redirigir el OAuth:
+
+```bash
+ngrok http 3001
+```
+
+En el panel de desarrolladores de Mercado Pago, sobre tu aplicación:
+
+- **Webhook** → `<ngrok>/mp/webhook`, tópico `payments`.
+- **Redirect URI** (OAuth) → `<ngrok>/mp/oauth/callback` (mismo valor en `MP_REDIRECT_URI`).
+
+La MCP de Mercado Pago (`save_webhook`) puede registrar la URL del túnel sin
+entrar al panel.
 
 ## Docs útiles
 
