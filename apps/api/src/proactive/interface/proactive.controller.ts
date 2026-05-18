@@ -41,9 +41,8 @@ export class ProactiveController {
       action: body.action,
       overrides: body.action === 'add' ? body.overrides : undefined,
     });
-    const user = await this.currentUser.resolve();
     // Echo the resolved prompt on the bus so other tabs reconcile their cards.
-    this.bus.publish(user.id, result.prompt);
+    this.bus.publish(result.prompt.userId, result.prompt);
     return result;
   }
 
