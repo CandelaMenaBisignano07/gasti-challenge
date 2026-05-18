@@ -56,7 +56,9 @@ export class AssessGoalRisk {
       const headroom = monthlyIncome - recentEssentialSpend - requiredMonthlyPace;
 
       let risk: 'none' | 'watch' | 'high';
-      if (recentDiscretionarySpend <= Math.max(headroom, 0)) {
+      // Negative headroom means the goal pace is unreachable on income alone —
+      // never 'none', regardless of discretionary spend (spec §7).
+      if (headroom >= 0 && recentDiscretionarySpend <= headroom) {
         risk = 'none';
       } else if (headroom > 0 && recentDiscretionarySpend <= headroom * 1.5) {
         risk = 'watch';
