@@ -29,6 +29,6 @@ import { JsonDefaultCategoryOverridesRepository } from '../categorization/reposi
     CategoryDescriptionResolver,
     { provide: TRANSACTION_CLASSIFIER, useClass: HttpTransactionClassifier },
   ],
-  exports: [TRANSACTIONS_REPOSITORY, MarkTransactionReversed],
+  exports: [TRANSACTIONS_REPOSITORY, MarkTransactionReversed, AddTransaction],
 })
 export class TransactionsModule {}

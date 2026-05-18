@@ -34,6 +34,10 @@ import { CategoryDescriptionResolver } from '../shared/providers/category-descri
       useFactory: () => new JsonDefaultCategoryOverridesRepository(),
     },
   ],
-  exports: [CategoryDescriptionResolver, DEFAULT_CATEGORY_OVERRIDES_REPOSITORY],
+  exports: [
+    OverrideMerchantCategory,
+    CategoryDescriptionResolver,
+    DEFAULT_CATEGORY_OVERRIDES_REPOSITORY,
+  ],
 })
 export class CategorizationModule {}
