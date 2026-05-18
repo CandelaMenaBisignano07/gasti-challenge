@@ -8,13 +8,27 @@ import {
   OverrideTransactionCategory,
   type OverrideTransactionInput,
 } from '../use-cases/override-transaction.use-case';
-import { overrideMerchantInput, overrideTransactionInput } from './categorization.schemas';
+import { CreateCategory, type CreateCategoryInput } from '../use-cases/create-category.use-case';
+import { RenameCategory, type RenameCategoryInput } from '../use-cases/rename-category.use-case';
+import { DeleteCategory, type DeleteCategoryInput } from '../use-cases/delete-category.use-case';
+import { ListCategories } from '../use-cases/list-categories.use-case';
+import {
+  createCategoryInput,
+  deleteCategoryInput,
+  overrideMerchantInput,
+  overrideTransactionInput,
+  renameCategoryInput,
+} from './categorization.schemas';
 
 @Controller('categorization')
 export class CategorizationController {
   constructor(
     private readonly merchant: OverrideMerchantCategory,
     private readonly transaction: OverrideTransactionCategory,
+    private readonly create: CreateCategory,
+    private readonly rename: RenameCategory,
+    private readonly del: DeleteCategory,
+    private readonly list: ListCategories,
   ) {}
 
   @Post('merchant')
@@ -27,5 +41,25 @@ export class CategorizationController {
     @Body(new ZodValidationPipe(overrideTransactionInput)) body: OverrideTransactionInput,
   ) {
     return this.transaction.execute(body);
+  }
+
+  @Post('create-category')
+  createCategory(@Body(new ZodValidationPipe(createCategoryInput)) body: CreateCategoryInput) {
+    return this.create.execute(body);
+  }
+
+  @Post('rename-category')
+  renameCategory(@Body(new ZodValidationPipe(renameCategoryInput)) body: RenameCategoryInput) {
+    return this.rename.execute(body);
+  }
+
+  @Post('delete-category')
+  deleteCategory(@Body(new ZodValidationPipe(deleteCategoryInput)) body: DeleteCategoryInput) {
+    return this.del.execute(body);
+  }
+
+  @Post('list-categories')
+  listCategories() {
+    return this.list.execute();
   }
 }
