@@ -16,5 +16,6 @@ import { BudgetsController } from './interface/budgets.controller';
     ClearBudget,
     GetBudgetProgress,
   ],
+  exports: [BUDGETS_REPOSITORY],
 })
 export class BudgetsModule {}
