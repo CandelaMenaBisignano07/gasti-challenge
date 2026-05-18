@@ -9,6 +9,6 @@ export type ReplyEvent =
 
 export interface ChatRepository {
   loadInitial(): Promise<Conversation>;
-  reply(input: { text: string; history: Message[] }): AsyncIterable<ReplyEvent>;
+  reply(input: { text: string; history: Message[]; sessionResumed?: boolean }): AsyncIterable<ReplyEvent>;
   confirmOption(input: { optionId: string; history: Message[] }): AsyncIterable<ReplyEvent>;
 }

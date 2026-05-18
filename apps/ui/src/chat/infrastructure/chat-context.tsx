@@ -26,9 +26,14 @@ export function ChatProvider({ children }: { children: ReactNode }) {
   // the first send can await it — HYDRATE_HISTORY replaces `messages` wholesale,
   // so it must land before any APPEND_USER or the new message would be lost.
   const historyLoaded = useRef<Promise<void> | undefined>(undefined);
+  // Marks the first message of a freshly loaded page that restored prior history,
+  // so the agent can void a mutation confirmation left pending before the reload.
+  const isFirstSend = useRef(true);
+  const hadRestoredHistory = useRef(false);
   useEffect(() => {
     historyLoaded.current = loadInitialConversation()
       .then((conv) => {
+        hadRestoredHistory.current = conv.messages.length > 0;
         dispatch({ type: 'HYDRATE_HISTORY', messages: conv.messages });
       })
       .catch(() => {});
@@ -37,10 +42,14 @@ export function ChatProvider({ children }: { children: ReactNode }) {
   const sendMessage = useCallback(
     async (text: string) => {
       await historyLoaded.current;
+      // First send after a page load that restored history: tell the agent any
+      // confirmation pending before the reload is void.
+      const sessionResumed = isFirstSend.current && hadRestoredHistory.current;
+      isFirstSend.current = false;
       dispatch({ type: 'ENTER_CONVERSATION' });
       // Typing a new message instead of picking a pill retires any open pills.
       dispatch({ type: 'RESOLVE_LAST_OPTIONS' });
-      for await (const ev of sendUserMessage({ text, history: state.messages })) {
+      for await (const ev of sendUserMessage({ text, history: state.messages, sessionResumed })) {
         switch (ev.kind) {
           case 'appendUser':
             dispatch({ type: 'APPEND_USER', message: ev.message });

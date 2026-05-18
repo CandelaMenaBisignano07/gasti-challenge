@@ -53,21 +53,21 @@ export class AgentChatRepository implements ChatRepository {
     }
   }
 
-  reply(input: { text: string; history: Message[] }): AsyncIterable<ReplyEvent> {
-    return this.#stream(input.text);
+  reply(input: { text: string; history: Message[]; sessionResumed?: boolean }): AsyncIterable<ReplyEvent> {
+    return this.#stream(input.text, input.sessionResumed ?? false);
   }
 
   confirmOption(input: { optionId: string; history: Message[] }): AsyncIterable<ReplyEvent> {
-    return this.#stream(resolveOptionLabel(input.optionId, input.history));
+    return this.#stream(resolveOptionLabel(input.optionId, input.history), false);
   }
 
-  async *#stream(text: string): AsyncIterable<ReplyEvent> {
+  async *#stream(text: string, sessionResumed: boolean): AsyncIterable<ReplyEvent> {
     let response: Response;
     try {
       response = await fetch('/api/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ text, threadId: getThreadId(), resourceId: RESOURCE_ID }),
+        body: JSON.stringify({ text, threadId: getThreadId(), resourceId: RESOURCE_ID, sessionResumed }),
       });
     } catch {
       yield errorFinal();

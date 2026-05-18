@@ -7,7 +7,7 @@ export const runtime = 'nodejs';
 
 const MASTRA_BASE_URL = process.env.MASTRA_BASE_URL ?? 'http://localhost:4112';
 
-type ChatRequest = { text: string; threadId: string; resourceId: string };
+type ChatRequest = { text: string; threadId: string; resourceId: string; sessionResumed?: boolean };
 
 function errorFinal(): ReplyEvent {
   return {
@@ -22,7 +22,7 @@ function errorFinal(): ReplyEvent {
 }
 
 export async function POST(req: Request): Promise<Response> {
-  const { text, threadId, resourceId } = (await req.json()) as ChatRequest;
+  const { text, threadId, resourceId, sessionResumed } = (await req.json()) as ChatRequest;
   const encoder = new TextEncoder();
   const mapper = createReplyEventMapper(() => crypto.randomUUID(), () => new Date());
 
@@ -31,7 +31,10 @@ export async function POST(req: Request): Promise<Response> {
       const emit = (event: ReplyEvent) =>
         controller.enqueue(encoder.encode(`${JSON.stringify(event)}\n`));
       try {
-        const client = new MastraClient({ baseUrl: MASTRA_BASE_URL });
+        const client = new MastraClient({
+          baseUrl: MASTRA_BASE_URL,
+          headers: { 'x-session-resumed': String(sessionResumed ?? false) },
+        });
         const agent = client.getAgent('gasti');
         const response = await agent.stream(text, {
           memory: { thread: threadId, resource: resourceId },

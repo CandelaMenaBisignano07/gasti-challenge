@@ -44,6 +44,7 @@ export const mastra = new Mastra({
         const requestContext = context.get('requestContext');
         requestContext.set('today', new Date().toISOString().slice(0, 10));
         requestContext.set('userId', 'default-user');
+        requestContext.set('sessionResumed', context.req.header('x-session-resumed') === 'true');
         try {
           const { categories } = await categorizationGateway.list({}, { userId: 'default-user' });
           requestContext.set(
