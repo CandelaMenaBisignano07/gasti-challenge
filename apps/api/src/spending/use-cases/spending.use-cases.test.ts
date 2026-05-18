@@ -51,8 +51,8 @@ test('top-merchants ranks merchants by total spend', async () => {
 
 test('compare reports per-category deltas between two periods', async () => {
   const result = await new CompareSpending(fakeTransactionsRepo(seed), periods, categories).execute({
-    periodA: { kind: 'calendarMonth', month: '2026-04' },
-    periodB: { kind: 'calendarMonth', month: '2026-05' },
+    periodA: { kind: 'month', month: '2026-04' },
+    periodB: { kind: 'month', month: '2026-05' },
   });
   expect(result.totalA).toBe(9000);
   expect(result.totalB).toBe(12000);

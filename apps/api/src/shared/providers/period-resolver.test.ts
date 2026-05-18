@@ -13,8 +13,8 @@ test('lastNDays resolves an inclusive N-day window ending today', () => {
   expect(resolver.resolve({ kind: 'lastNDays', n: 7 })).toEqual({ from: '2026-05-11', to: '2026-05-17' });
 });
 
-test('calendarMonth resolves the full month', () => {
-  expect(resolver.resolve({ kind: 'calendarMonth', month: '2026-04' })).toEqual({
+test('month resolves the full calendar month', () => {
+  expect(resolver.resolve({ kind: 'month', month: '2026-04' })).toEqual({
     from: '2026-04-01',
     to: '2026-04-30',
   });

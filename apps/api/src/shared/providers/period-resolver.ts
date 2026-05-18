@@ -14,7 +14,7 @@ export class PeriodResolver {
         return { from: startOfMonth(now), to: formatIso(now) };
       case 'lastNDays':
         return { from: addDays(formatIso(now), -(period.n - 1)), to: formatIso(now) };
-      case 'calendarMonth':
+      case 'month':
         return calendarMonthRange(period.month);
       case 'customRange':
         return { from: period.from, to: period.to };
