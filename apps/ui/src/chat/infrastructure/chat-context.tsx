@@ -22,6 +22,8 @@ export function ChatProvider({ children }: { children: ReactNode }) {
 
   const sendMessage = useCallback(
     async (text: string) => {
+      // Typing a new message instead of picking a pill retires any open pills.
+      dispatch({ type: 'RESOLVE_LAST_OPTIONS' });
       for await (const ev of sendUserMessage({ text, history: state.messages })) {
         switch (ev.kind) {
           case 'appendUser':
