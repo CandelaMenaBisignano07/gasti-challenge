@@ -16,6 +16,7 @@ import { makeTransactionsTools } from '../transactions/interface/transactions.to
 import { makeGoalsTools } from '../goals/interface/goals.tools';
 import { makeGastiAgent } from '../agent/gasti-agent';
 import { buildMastraStorage } from './storage';
+import { buildGastiMemory } from './memory';
 
 const api = makeApiClient();
 
@@ -29,8 +30,7 @@ const tools = {
   ...makeGoalsTools(makeHttpGoalsGateway(api)),
 };
 
-// Memory is built in a separate worktree; the agent runs with or without it.
-const gasti = makeGastiAgent({ tools, memory: undefined });
+const gasti = makeGastiAgent({ tools, memory: buildGastiMemory() });
 
 export const mastra = new Mastra({
   agents: { gasti },
