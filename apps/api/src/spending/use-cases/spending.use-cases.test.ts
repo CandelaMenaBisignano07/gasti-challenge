@@ -6,6 +6,9 @@ import { CompareSpending } from './compare.use-case';
 import { PeriodResolver } from '../../shared/providers/period-resolver';
 import { CategoryResolver } from '../../shared/providers/category-resolver';
 import { fakeCategorizationRepo, fakeTransactionsRepo, fixedClock } from '../../shared/testing/fakes';
+import { CategoryRegistry } from '../../shared/providers/category-registry';
+import { DomainError } from '../../shared/domain/domain-error';
+import { fakeCategoriesRepo } from '../../shared/testing/fakes';
 import type { Transaction } from '../../shared/domain/transaction';
 
 const tx = (
@@ -25,9 +28,10 @@ const seed: Transaction[] = [
 
 const periods = new PeriodResolver(fixedClock('2026-05-17'));
 const categories = new CategoryResolver(fakeCategorizationRepo());
+const registry = new CategoryRegistry(fakeCategoriesRepo());
 
 test('sum-by-category totals one category for the current month', async () => {
-  const result = await new SumByCategory(fakeTransactionsRepo(seed), periods, categories).execute({
+  const result = await new SumByCategory(fakeTransactionsRepo(seed), periods, categories, registry).execute({
     category: 'comida',
     period: { kind: 'currentMonth' },
   });
@@ -64,9 +68,16 @@ test('an override moves spend into the corrected category', async () => {
   const withOverride = new CategoryResolver(
     fakeCategorizationRepo({ merchants: { Uber: 'comida' } }),
   );
-  const result = await new SumByCategory(fakeTransactionsRepo(seed), periods, withOverride).execute({
+  const result = await new SumByCategory(fakeTransactionsRepo(seed), periods, withOverride, registry).execute({
     category: 'comida',
     period: { kind: 'currentMonth' },
   });
   expect(result.total).toBe(12000);
+});
+
+test('sum-by-category rejects an unknown category', async () => {
+  const useCase = new SumByCategory(fakeTransactionsRepo(seed), periods, categories, registry);
+  await expect(
+    useCase.execute({ category: 'inventada', period: { kind: 'currentMonth' } }),
+  ).rejects.toThrow(DomainError);
 });

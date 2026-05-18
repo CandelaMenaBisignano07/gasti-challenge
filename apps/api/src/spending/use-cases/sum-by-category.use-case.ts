@@ -1,6 +1,8 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { CategoryResolver } from '../../shared/providers/category-resolver';
 import { PeriodResolver } from '../../shared/providers/period-resolver';
+import { CategoryRegistry } from '../../shared/providers/category-registry';
+import { DomainError } from '../../shared/domain/domain-error';
 import type { Category } from '../../shared/domain/category';
 import type { Period } from '../../shared/domain/period';
 import {
@@ -19,9 +21,13 @@ export class SumByCategory {
     @Inject(TRANSACTIONS_REPOSITORY) private readonly txRepo: TransactionsRepository,
     private readonly periods: PeriodResolver,
     private readonly categories: CategoryResolver,
+    private readonly registry: CategoryRegistry,
   ) {}
 
   async execute(input: SumByCategoryInput) {
+    if (!(await this.registry.exists(input.category))) {
+      throw new DomainError('VALIDATION_ERROR', `"${input.category}" no es una categoría válida.`);
+    }
     const range = this.periods.resolve(input.period);
     const txs = await this.txRepo.all();
     const cats = await this.categories.resolveAll(txs);
