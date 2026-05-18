@@ -29,6 +29,8 @@ export class MercadoPagoProvider implements MpPaymentSource {
       });
       if (res.ok) return (await res.json()) as MpPayment;
       if (res.status === 401 && attempt === 0) {
+        // Only the first 401 triggers a refresh; a non-first 401 is intentionally
+        // terminal — no second refresh, to avoid a refresh loop.
         user = await this.users.getCurrent();
         token = await this.refresh.execute(user);
         continue;
@@ -41,6 +43,7 @@ export class MercadoPagoProvider implements MpPaymentSource {
       }
       throw new Error(`MP payment fetch failed: HTTP ${res.status}`);
     }
+    // belt-and-braces: the loop's last iteration already throws.
     throw new Error('MP payment fetch failed: retries exhausted');
   }
 }

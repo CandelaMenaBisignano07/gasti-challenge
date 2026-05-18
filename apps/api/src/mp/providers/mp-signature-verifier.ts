@@ -1,5 +1,8 @@
 import { createHmac, timingSafeEqual } from 'node:crypto';
 
+/** DI token for the configured Mercado Pago webhook signature verifier. */
+export const MP_SIGNATURE_VERIFIER = 'MP_SIGNATURE_VERIFIER';
+
 export interface SignatureInput {
   xSignature: string | undefined;
   xRequestId: string | undefined;

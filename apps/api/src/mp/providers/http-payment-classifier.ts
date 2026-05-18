@@ -1,9 +1,18 @@
 import { Injectable, Logger } from '@nestjs/common';
+import { z } from 'zod';
 import type { ClassifyArgs, PaymentClassifier } from '../domain/payment-classifier';
 import { FALLBACK_CLASSIFICATION } from '../domain/payment-classifier';
 import type { Classification } from '../domain/classification';
+import { categorySchema } from '../../shared/domain/category';
 
 const AI_BASE = process.env.AI_BASE_URL?.trim() || 'http://localhost:4111';
+
+/** Validates the `apps/ai` workflow result against the `Classification` shape. */
+const classificationSchema = z.object({
+  category: categorySchema,
+  suggestedDescription: z.string(),
+  confidence: z.number().min(0).max(1),
+});
 
 /** Calls the apps/ai `classify-mp-event` workflow; falls back on any failure. */
 @Injectable()
@@ -32,10 +41,14 @@ export class HttpPaymentClassifier implements PaymentClassifier {
       body: JSON.stringify({ inputData: args }),
     });
     if (!res.ok) throw new Error(`classifier HTTP ${res.status}`);
-    const json = (await res.json()) as { status?: string; result?: Classification };
+    const json = (await res.json()) as { status?: string; result?: unknown };
     if (json.status !== 'success' || !json.result) {
       throw new Error('classifier returned no result');
     }
-    return json.result;
+    const parsed = classificationSchema.safeParse(json.result);
+    if (!parsed.success) {
+      throw new Error(`classifier returned an invalid result: ${parsed.error.message}`);
+    }
+    return parsed.data;
   }
 }
