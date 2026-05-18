@@ -5,6 +5,7 @@ import {
   MP_SIGNATURE_VERIFIER,
   type MpSignatureVerifier,
 } from '../providers/mp-signature-verifier';
+import { ProcessMpEvent } from '../use-cases/process-mp-event.use-case';
 
 @Controller('mp')
 export class MpWebhookController {
@@ -12,6 +13,7 @@ export class MpWebhookController {
 
   constructor(
     @Inject(MP_SIGNATURE_VERIFIER) private readonly verify: MpSignatureVerifier,
+    private readonly processMpEvent: ProcessMpEvent,
   ) {}
 
   @Post('webhook')
@@ -28,7 +30,10 @@ export class MpWebhookController {
       return { received: true };
     }
     if (body.type !== 'payment') return { received: true };
-    // TODO Phase 7: fire-and-forget ProcessMpEvent.execute(...)
+    // Return 200 immediately; process the event asynchronously so MP never waits.
+    void this.processMpEvent
+      .execute({ paymentId: body.data.id, mpUserId: String(body.user_id) })
+      .catch((e) => this.log.error(e));
     return { received: true };
   }
 }

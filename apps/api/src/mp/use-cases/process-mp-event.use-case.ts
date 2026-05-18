@@ -17,11 +17,8 @@ import {
   PROACTIVE_EVENT_BUS,
   type ProactiveEventBus,
 } from '../../proactive/domain/proactive-event-bus';
-import type {
-  NewPendingPrompt,
-  NoticeReason,
-  PaymentKind,
-} from '../../proactive/domain/pending-prompt';
+import type { NoticeReason, PaymentKind } from '../../proactive/domain/pending-prompt';
+import type { NewPendingPrompt } from '../../proactive/domain/pending-prompts.repository';
 import { MP_PAYMENT_SOURCE, type MpPaymentSource } from '../domain/mp-payment-source';
 import { PAYMENT_CLASSIFIER, type PaymentClassifier } from '../domain/payment-classifier';
 import { isCompletedPayment } from '../domain/is-completed-payment';
