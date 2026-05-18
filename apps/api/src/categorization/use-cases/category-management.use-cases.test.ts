@@ -1,6 +1,7 @@
 import { test, expect } from 'bun:test';
 import { CreateCategory } from './create-category.use-case';
 import { RenameCategory } from './rename-category.use-case';
+import { DeleteCategory } from './delete-category.use-case';
 import { CategoryRegistry } from '../../shared/providers/category-registry';
 import { DomainError } from '../../shared/domain/domain-error';
 import {
@@ -102,4 +103,48 @@ test('rename-category rejects a target that collides with an existing category',
     new CategoryRegistry(categories),
   );
   await expect(useCase.execute({ from: 'mascotas', to: 'Comida' })).rejects.toThrow(DomainError);
+});
+
+test('delete-category falls everything back to otros and removes the category', async () => {
+  const categories = fakeCategoriesRepo(['mascotas']);
+  const txs = fakeTransactionsRepo([tx('txn_001', 'mascotas'), tx('txn_002', 'comida')]);
+  const overrides = fakeCategorizationRepo({
+    merchants: { 'Pet Shop': 'mascotas' },
+    transactions: { txn_003: 'mascotas' },
+  });
+  const budgets = fakeBudgetsRepo({ '2026-05': { mascotas: 10000, comida: 50000 } });
+  const useCase = new DeleteCategory(categories, txs, overrides, budgets, new CategoryRegistry(categories));
+
+  const result = await useCase.execute({ name: 'Mascotas' });
+
+  expect(result).toEqual({ name: 'mascotas' });
+  expect(await categories.all()).toEqual([]);
+  expect((await txs.all()).find((t) => t.id === 'txn_001')?.category).toBe('otros');
+  expect((await overrides.overrides()).merchants['Pet Shop']).toBe('otros');
+  expect((await overrides.overrides()).transactions.txn_003).toBe('otros');
+  expect(await budgets.forMonth('2026-05')).toEqual({ comida: 50000 });
+});
+
+test('delete-category rejects deleting a default category', async () => {
+  const categories = fakeCategoriesRepo();
+  const useCase = new DeleteCategory(
+    categories,
+    fakeTransactionsRepo(),
+    fakeCategorizationRepo(),
+    fakeBudgetsRepo(),
+    new CategoryRegistry(categories),
+  );
+  await expect(useCase.execute({ name: 'comida' })).rejects.toThrow(DomainError);
+});
+
+test('delete-category rejects an unknown category', async () => {
+  const categories = fakeCategoriesRepo();
+  const useCase = new DeleteCategory(
+    categories,
+    fakeTransactionsRepo(),
+    fakeCategorizationRepo(),
+    fakeBudgetsRepo(),
+    new CategoryRegistry(categories),
+  );
+  await expect(useCase.execute({ name: 'inexistente' })).rejects.toThrow(DomainError);
 });
