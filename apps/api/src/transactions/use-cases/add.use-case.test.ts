@@ -1,7 +1,16 @@
 import { test, expect } from 'bun:test';
 import { AddTransaction } from './add.use-case';
 import { CategoryResolver } from '../../shared/providers/category-resolver';
-import { fakeCategorizationRepo, fakeTransactionsRepo, fixedClock } from '../../shared/testing/fakes';
+import { CategoryRegistry } from '../../shared/providers/category-registry';
+import { DomainError } from '../../shared/domain/domain-error';
+import {
+  fakeCategoriesRepo,
+  fakeCategorizationRepo,
+  fakeTransactionsRepo,
+  fixedClock,
+} from '../../shared/testing/fakes';
+
+const registry = () => new CategoryRegistry(fakeCategoriesRepo(['mascotas']));
 
 test('add defaults the date to today and currency to ARS', async () => {
   const repo = fakeTransactionsRepo();
@@ -9,6 +18,7 @@ test('add defaults the date to today and currency to ARS', async () => {
     repo,
     new CategoryResolver(fakeCategorizationRepo()),
     fixedClock('2026-05-17'),
+    registry(),
   );
   const { transaction } = await useCase.execute({
     amount: 3000,
@@ -18,7 +28,7 @@ test('add defaults the date to today and currency to ARS', async () => {
   });
   expect(transaction.date).toBe('2026-05-17');
   expect(transaction.currency).toBe('ARS');
-  expect((await repo.all())).toHaveLength(1);
+  expect(await repo.all()).toHaveLength(1);
 });
 
 test('add falls back to a merchant rule, then to otros', async () => {
@@ -26,6 +36,7 @@ test('add falls back to a merchant rule, then to otros', async () => {
     fakeTransactionsRepo(),
     new CategoryResolver(fakeCategorizationRepo({ merchants: { Coderhouse: 'educacion' } })),
     fixedClock('2026-05-17'),
+    registry(),
   );
   const ruled = await withRule.execute({ amount: 50000, description: 'Curso', merchant: 'Coderhouse' });
   expect(ruled.transaction.category).toBe('educacion');
@@ -34,7 +45,36 @@ test('add falls back to a merchant rule, then to otros', async () => {
     fakeTransactionsRepo(),
     new CategoryResolver(fakeCategorizationRepo()),
     fixedClock('2026-05-17'),
+    registry(),
   );
   const unruled = await noRule.execute({ amount: 1000, description: 'X', merchant: 'Desconocido' });
   expect(unruled.transaction.category).toBe('otros');
+});
+
+test('add accepts a custom category that exists in the registry', async () => {
+  const useCase = new AddTransaction(
+    fakeTransactionsRepo(),
+    new CategoryResolver(fakeCategorizationRepo()),
+    fixedClock('2026-05-17'),
+    registry(),
+  );
+  const { transaction } = await useCase.execute({
+    amount: 2000,
+    description: 'Alimento',
+    merchant: 'Pet Shop',
+    category: 'mascotas',
+  });
+  expect(transaction.category).toBe('mascotas');
+});
+
+test('add rejects a category that is not in the registry', async () => {
+  const useCase = new AddTransaction(
+    fakeTransactionsRepo(),
+    new CategoryResolver(fakeCategorizationRepo()),
+    fixedClock('2026-05-17'),
+    registry(),
+  );
+  await expect(
+    useCase.execute({ amount: 2000, description: 'X', merchant: 'Y', category: 'inventada' }),
+  ).rejects.toThrow(DomainError);
 });
