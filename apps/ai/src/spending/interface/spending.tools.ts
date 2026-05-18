@@ -27,7 +27,8 @@ export function makeSpendingTools(gateway: SpendingGateway) {
     }),
     listTransactions: createGatewayTool({
       id: 'listTransactions',
-      description: 'Filtered transaction lookup by merchant, category, and/or period.',
+      description:
+        'Filtered transaction lookup by merchant, one or more categories, and/or period. Omit categories to include all of them.',
       inputSchema: s.listTransactionsInput,
       outputSchema: s.listTransactionsResult,
       call: (i, c) => gateway.listTransactions(i, c),

@@ -3,6 +3,7 @@ import { SumByCategory } from './sum-by-category.use-case';
 import { GetSpendingBreakdown } from './breakdown.use-case';
 import { GetTopMerchants } from './top-merchants.use-case';
 import { CompareSpending } from './compare.use-case';
+import { ListTransactions } from './list-transactions.use-case';
 import { PeriodResolver } from '../../shared/providers/period-resolver';
 import { CategoryResolver } from '../../shared/providers/category-resolver';
 import { fakeCategorizationRepo, fakeTransactionsRepo, fixedClock } from '../../shared/testing/fakes';
@@ -58,6 +59,32 @@ test('compare reports per-category deltas between two periods', async () => {
   expect(result.totalB).toBe(12000);
   const comida = result.categories.find((c) => c.category === 'comida');
   expect(comida).toEqual({ category: 'comida', totalA: 9000, totalB: 10000, delta: 1000, deltaPct: (1000 / 9000) * 100 });
+});
+
+test('list-transactions filters by a single category', async () => {
+  const result = await new ListTransactions(fakeTransactionsRepo(seed), periods, categories).execute({
+    categories: ['transporte'],
+    period: { kind: 'currentMonth' },
+  });
+  expect(result.transactions.map((t) => t.id)).toEqual(['txn_003']);
+  expect(result.total).toBe(2000);
+});
+
+test('list-transactions filters by several categories at once', async () => {
+  const result = await new ListTransactions(fakeTransactionsRepo(seed), periods, categories).execute({
+    categories: ['comida', 'transporte'],
+    period: { kind: 'currentMonth' },
+  });
+  expect(result.transactions.map((t) => t.id).sort()).toEqual(['txn_001', 'txn_002', 'txn_003']);
+  expect(result.total).toBe(12000);
+});
+
+test('list-transactions with no categories includes all of them', async () => {
+  const result = await new ListTransactions(fakeTransactionsRepo(seed), periods, categories).execute({
+    period: { kind: 'currentMonth' },
+  });
+  expect(result.transactions).toHaveLength(3);
+  expect(result.total).toBe(12000);
 });
 
 test('an override moves spend into the corrected category', async () => {

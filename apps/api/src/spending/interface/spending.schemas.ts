@@ -10,7 +10,7 @@ export const topMerchantsInput = z.object({
 });
 export const listTransactionsInput = z.object({
   merchant: z.string().optional(),
-  category: categorySchema.optional(),
+  categories: z.array(categorySchema).optional(),
   period: periodSchema,
   limit: z.number().int().positive().optional(),
 });
