@@ -167,13 +167,13 @@ function build(opts: { prompts?: PendingPrompt[]; user?: User } = {}) {
   return { useCase, promptsRepo, add, override };
 }
 
-test('add without overrides → AddTransaction gets mp_webhook source, kind direction, mpPaymentId', async () => {
+test('add without overrides → AddTransaction gets mercadopago source, kind direction, mpPaymentId', async () => {
   const { useCase, promptsRepo, add } = build({ prompts: [makePrompt()] });
 
   const result = await useCase.execute({ promptId: 'p_1', action: 'add' });
 
   expect(add.calls).toHaveLength(1);
-  expect(add.calls[0].source).toBe('mp_webhook');
+  expect(add.calls[0].source).toBe('mercadopago');
   expect(add.calls[0].direction).toBe('expense');
   expect(add.calls[0].mpPaymentId).toBe('PAY_1');
   expect(add.calls[0].amount).toBe(12500);

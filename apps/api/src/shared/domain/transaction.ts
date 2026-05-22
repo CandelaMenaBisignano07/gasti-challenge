@@ -4,9 +4,7 @@ import { operationTypeSchema } from '../../mp/domain/operation-type';
 
 export const transactionDirection = z.enum(['expense', 'income']);
 export const transactionStatusSchema = z.enum(['active', 'refunded', 'charged_back']);
-// Additive: `mercadopago` joins for the polling-pivot backfill path. T20 will
-// drop `mp_webhook` and migrate existing rows.
-export const transactionSource = z.enum(['manual', 'mp_webhook', 'mercadopago']);
+export const transactionSource = z.enum(['manual', 'mercadopago']);
 
 export const transactionSchema = z.object({
   id: z.string(),

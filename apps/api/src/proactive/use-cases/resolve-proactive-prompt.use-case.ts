@@ -58,7 +58,7 @@ export class ResolveProactivePrompt {
       date: prompt.paymentDate.slice(0, 10),
       userId: user.id,
       direction: prompt.kind,
-      source: 'mp_webhook',
+      source: 'mercadopago',
       mpPaymentId: prompt.mpPaymentId,
     });
     await this.prompts.markAdded(prompt.id, transaction.id);

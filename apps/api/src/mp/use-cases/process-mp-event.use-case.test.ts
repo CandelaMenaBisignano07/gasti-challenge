@@ -167,7 +167,7 @@ function makeTx(overrides: Partial<Transaction> = {}): Transaction {
     direction: 'expense',
     status: 'active',
     statusChangedAt: null,
-    source: 'mp_webhook',
+    source: 'mercadopago',
     mpPaymentId: 'PAY_1',
     ...overrides,
   };
