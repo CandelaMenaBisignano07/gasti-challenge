@@ -6,7 +6,11 @@ import {
   type Transaction,
   type TransactionStatus,
 } from '../../shared/domain/transaction';
-import type { TransactionFields, TransactionsRepository } from '../domain/transactions.repository';
+import type {
+  CreateTransactionInput,
+  TransactionFields,
+  TransactionsRepository,
+} from '../domain/transactions.repository';
 
 @Injectable()
 export class JsonTransactionsRepository implements TransactionsRepository {
@@ -26,6 +30,29 @@ export class JsonTransactionsRepository implements TransactionsRepository {
     const txs = await this.all();
     txs.push(tx);
     await this.store.write(txs);
+  }
+
+  async create(input: CreateTransactionInput): Promise<Transaction> {
+    const id = await this.nextId();
+    const tx = transactionSchema.parse({
+      id,
+      date: input.date,
+      amount: input.amount,
+      currency: 'ARS',
+      category: input.category,
+      description: input.description,
+      merchant: input.merchant,
+      userId: input.userId,
+      direction: input.direction,
+      status: input.status ?? 'active',
+      statusChangedAt: null,
+      source: input.source,
+      mpPaymentId: input.mpPaymentId ?? null,
+      needsReview: input.needsReview ?? false,
+      operationType: input.operationType ?? null,
+    });
+    await this.add(tx);
+    return tx;
   }
 
   async update(id: string, fields: TransactionFields): Promise<Transaction | null> {

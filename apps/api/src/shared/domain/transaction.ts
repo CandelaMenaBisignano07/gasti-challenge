@@ -1,9 +1,12 @@
 import { z } from 'zod';
 import { categorySchema } from './category';
+import { operationTypeSchema } from '../../mp/domain/operation-type';
 
 export const transactionDirection = z.enum(['expense', 'income']);
 export const transactionStatusSchema = z.enum(['active', 'refunded', 'charged_back']);
-export const transactionSource = z.enum(['manual', 'mp_webhook']);
+// Additive: `mercadopago` joins for the polling-pivot backfill path. T20 will
+// drop `mp_webhook` and migrate existing rows.
+export const transactionSource = z.enum(['manual', 'mp_webhook', 'mercadopago']);
 
 export const transactionSchema = z.object({
   id: z.string(),
@@ -21,6 +24,14 @@ export const transactionSchema = z.object({
   statusChangedAt: z.string().nullable().default(null),
   source: transactionSource.default('manual'),
   mpPaymentId: z.string().nullable().default(null),
+  // `needsReview` is set true when a backfilled transaction's classification
+  // confidence falls below the LOW_CONFIDENCE threshold. The UI surfaces these
+  // for the user to inspect.
+  needsReview: z.boolean().default(false),
+  // MP's `operation_type` (regular_payment, money_transfer, recurring_payment).
+  // `account_fund` is filtered before persistence, so we never store it. Null
+  // for manual or older rows that pre-date the polling pivot.
+  operationType: operationTypeSchema.nullable().default(null),
 });
 
 export type Transaction = z.infer<typeof transactionSchema>;

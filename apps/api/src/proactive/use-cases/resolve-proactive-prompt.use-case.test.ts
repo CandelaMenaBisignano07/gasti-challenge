@@ -129,6 +129,8 @@ function fakeAddTransaction(): { useCase: AddTransaction; calls: AddTransactionI
         statusChangedAt: null,
         source: input.source ?? 'manual',
         mpPaymentId: input.mpPaymentId ?? null,
+        needsReview: false,
+        operationType: null,
       };
       return { transaction: tx };
     },

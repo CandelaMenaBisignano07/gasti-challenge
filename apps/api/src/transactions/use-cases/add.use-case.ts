@@ -84,6 +84,8 @@ export class AddTransaction {
       statusChangedAt: null,
       source: input.source ?? 'manual',
       mpPaymentId: input.mpPaymentId ?? null,
+      needsReview: false,
+      operationType: null,
     };
     await this.repo.add(tx);
     return { transaction: tx };

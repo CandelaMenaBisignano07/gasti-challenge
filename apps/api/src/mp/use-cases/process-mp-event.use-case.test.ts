@@ -105,6 +105,10 @@ function fakeBus(): { bus: ProactiveEventBus; published: PendingPrompt[] } {
       subscribe() {
         return () => {};
       },
+      publishBackfillSummary() {},
+      subscribeBackfillSummaries() {
+        return () => {};
+      },
     },
   };
 }
