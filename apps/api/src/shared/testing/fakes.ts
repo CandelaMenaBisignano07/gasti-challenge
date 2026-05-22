@@ -10,7 +10,16 @@ import type {
   CategoryOverrides,
 } from '../domain/category-overrides';
 import type { BudgetsRepository } from '../../budgets/domain/budgets.repository';
-import type { CategoriesRepository } from '../domain/custom-categories';
+import type { CategoriesRepository, CustomCategoryDefinition } from '../domain/custom-categories';
+import type {
+  DefaultCategoryOverrides,
+  DefaultCategoryOverridesRepository,
+} from '../domain/default-category-overrides';
+import type {
+  ClassifyArgs,
+  Classification,
+  TransactionClassifier,
+} from '../../categorization/domain/transaction-classifier';
 
 export function fixedClock(iso: string): Clock {
   return { now: () => new Date(`${iso}T12:00:00.000Z`) };
@@ -101,20 +110,51 @@ export function fakeBudgetsRepo(
   };
 }
 
-export function fakeCategoriesRepo(seed: string[] = []): CategoriesRepository {
-  let data = [...seed];
+export function fakeCategoriesRepo(
+  seed: ReadonlyArray<string | CustomCategoryDefinition> = [],
+): CategoriesRepository {
+  let data: CustomCategoryDefinition[] = seed.map((entry) =>
+    typeof entry === 'string' ? { name: entry, description: '' } : { ...entry },
+  );
   return {
     async all() {
-      return [...data];
+      return data.map((c) => ({ ...c }));
     },
-    async add(name) {
-      if (!data.includes(name)) data.push(name);
+    async add(name, description) {
+      if (!data.some((c) => c.name === name)) data.push({ name, description });
     },
     async remove(name) {
-      data = data.filter((c) => c !== name);
+      data = data.filter((c) => c.name !== name);
     },
     async rename(from, to) {
-      data = data.map((c) => (c === from ? to : c));
+      data = data.map((c) => (c.name === from ? { name: to, description: c.description } : c));
+    },
+    async setDescription(name, description) {
+      if (!data.some((c) => c.name === name)) return;
+      data = data.map((c) => (c.name === name ? { name: c.name, description } : c));
+    },
+  };
+}
+
+export function fakeTransactionClassifier(
+  respond: (args: ClassifyArgs) => Classification = () => ({ category: 'otros', confidence: 0 }),
+): TransactionClassifier {
+  return { classify: async (args) => respond(args) };
+}
+
+export function fakeDefaultCategoryOverridesRepo(
+  seed: DefaultCategoryOverrides = {},
+): DefaultCategoryOverridesRepository {
+  const data: DefaultCategoryOverrides = { ...seed };
+  return {
+    async all() {
+      return { ...data };
+    },
+    async set(name, description) {
+      data[name] = description;
+    },
+    async reset(name) {
+      delete data[name];
     },
   };
 }

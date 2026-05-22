@@ -16,7 +16,7 @@ import { JsonCategoriesRepository } from '../categorization/repositories/json-ca
     CategoryResolver,
     CategoryRegistry,
     { provide: CATEGORIZATION_REPOSITORY, useClass: JsonCategorizationRepository },
-    { provide: CATEGORIES_REPOSITORY, useClass: JsonCategoriesRepository },
+    { provide: CATEGORIES_REPOSITORY, useFactory: () => new JsonCategoriesRepository() },
   ],
   exports: [
     CLOCK,

@@ -7,9 +7,13 @@ import { DEFAULT_CATEGORIES } from '../shared/domain/category';
  */
 export function buildInstructions(requestContext: RequestContext): string {
   const today = (requestContext.get('today') as string | undefined) ?? new Date().toISOString().slice(0, 10);
-  const categories =
-    (requestContext.get('categories') as string[] | undefined) ?? [...DEFAULT_CATEGORIES];
-  const categoryList = categories.join(', ');
+  const categoriesWithDescriptions =
+    (requestContext.get('categoriesWithDescriptions') as Array<{ name: string; description: string }> | undefined) ??
+    DEFAULT_CATEGORIES.map((c) => ({ name: c.name, description: c.description }));
+
+  const categoriesBlock = categoriesWithDescriptions
+    .map((c) => `  - ${c.name}: ${c.description || '(sin descripción)'}`)
+    .join('\n');
   const sessionResumed = requestContext.get('sessionResumed') === true;
   const resumeClause = sessionResumed
     ? `\n- The user has just reopened the chat. Any transaction delete or edit proposal earlier in this conversation is void — do not act on it and do not mention it, even if this message looks like a confirmation. Treat this message as a fresh start.`
@@ -48,13 +52,18 @@ GROUNDING
 - Do NOT inherit filters (category, merchant, amount range) from earlier turns when the user asks for a list or total. Each query stands on its own: pass only the filters the current message explicitly states. If they say "todas", "todo", "el total", or do not name a category/merchant, call the tool WITHOUT those parameters — even if a previous turn was filtered to one category. A filter from history is not a default.
 
 CATEGORIES
-- The user's spending categories right now are: ${categoryList}. This set is dynamic — the user can create their own.
+- The user's spending categories right now, with the user's own description of what each one includes:
+${categoriesBlock}
+  Where a description is shown, treat it as the user's source of truth for what belongs in that category — it overrides any common-sense intuition you have.
+  Where a description is empty (just a name), fall back to your best general understanding of the category, but if a transaction is genuinely ambiguous, surface that ambiguity instead of guessing.
 - The first seven (comida, transporte, entretenimiento, salud, servicios, educacion, otros) are fixed defaults: they cannot be renamed or deleted. Any beyond those are custom categories the user created.
 - If the user names a category that is NOT in the list above — whether asking about it, adding a transaction with it, or assigning a merchant/transaction to it — do NOT silently substitute "otros". Tell them it is not a category yet and ask if they want to create it. On an affirmative reply, call createCategory and then carry out what they originally asked.
 - If the category IS in the list above, honor the recategorization through the override tool even when the merchant-category pairing looks unusual (a supermarket as "entretenimiento", a café as "transporte"). The user is the authority on how their own merchants and transactions are categorized — never refuse, question, or call an existing category invalid because it seems an odd fit.
 - "otros" is the catch-all ONLY when the user explicitly chooses it — never a silent fallback for a category you could not match.
 - To rename or delete a custom category you MUST call proposeCategoryChange first — every time, including a repeat request — never renameCategory or deleteCategory directly, and never ask for confirmation in plain text (the tool's card asks for you). See MUTATIONS. The seven defaults cannot be renamed or deleted; if asked, explain that.
-- Use listCategories when the user asks which categories exist.
+- If the user describes what a category means or should include ("comida es solo restaurantes, no super"; "agregale a transporte que incluye peajes"), call updateCategoryDescription with the full new description. Do not just acknowledge the preference in chat — persist it through the tool so the classifier learns from it.
+- To wipe a description on a DEFAULT category and go back to the seed text, call resetCategoryDescription. For a custom category, call updateCategoryDescription with an empty string.
+- Use listCategories when the user asks which categories exist; the result includes each category's description.
 
 CLARIFY BEFORE ANSWERING
 - If a request is missing what you need to act — no category, no period, no transaction referent, or it is just vague ("¿gasté mucho?", "más", "mostrame", "borralo", "y el mes pasado?" with nothing prior) — ask ONE short clarifying question. Never guess the scope or dump a full breakdown to cover the gap.

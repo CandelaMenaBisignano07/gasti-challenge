@@ -9,6 +9,8 @@ export const transactionSchema = z.object({
   category: categorySchema,
   description: z.string(),
   merchant: z.string(),
+  classificationConfidence: z.number().min(0).max(1).optional(),
+  classificationSource: z.enum(['manual', 'override', 'classifier', 'fallback']).optional(),
 });
 
 export type Transaction = z.infer<typeof transactionSchema>;

@@ -13,8 +13,14 @@ export type OverrideMerchantResult = z.infer<typeof overrideMerchantResult>;
 export type OverrideTransactionInput = z.infer<typeof overrideTransactionInput>;
 export type OverrideTransactionResult = z.infer<typeof overrideTransactionResult>;
 
-export const createCategoryInput = z.object({ name: z.string().min(1).max(24) });
-export const createCategoryResult = z.object({ name: z.string() });
+export const createCategoryInput = z.object({
+  name: z.string().min(1).max(24),
+  description: z.string().max(240).optional(),
+});
+export const createCategoryResult = z.object({
+  name: z.string(),
+  description: z.string(),
+});
 
 export const renameCategoryInput = z.object({
   from: z.string().min(1),
@@ -27,7 +33,11 @@ export const deleteCategoryResult = z.object({ name: z.string() });
 
 export const listCategoriesInput = z.object({});
 export const listCategoriesResult = z.object({
-  categories: z.array(z.object({ name: z.string(), isCustom: z.boolean() })),
+  categories: z.array(z.object({
+    name: z.string(),
+    isCustom: z.boolean(),
+    description: z.string(),
+  })),
 });
 
 export const proposeCategoryChangeInput = z.object({
@@ -53,6 +63,26 @@ export type ListCategoriesResult = z.infer<typeof listCategoriesResult>;
 export type ProposeCategoryChangeInput = z.infer<typeof proposeCategoryChangeInput>;
 export type ProposeCategoryChangeResult = z.infer<typeof proposeCategoryChangeResult>;
 
+export const updateCategoryDescriptionInput = z.object({
+  name: z.string().min(1),
+  description: z.string().max(240),
+});
+export const updateCategoryDescriptionResult = z.object({
+  name: z.string(),
+  description: z.string(),
+});
+
+export const resetCategoryDescriptionInput = z.object({ name: z.string().min(1) });
+export const resetCategoryDescriptionResult = z.object({
+  name: z.string(),
+  description: z.string(),
+});
+
+export type UpdateCategoryDescriptionInput = z.infer<typeof updateCategoryDescriptionInput>;
+export type UpdateCategoryDescriptionResult = z.infer<typeof updateCategoryDescriptionResult>;
+export type ResetCategoryDescriptionInput = z.infer<typeof resetCategoryDescriptionInput>;
+export type ResetCategoryDescriptionResult = z.infer<typeof resetCategoryDescriptionResult>;
+
 export interface CategorizationGateway {
   overrideMerchant(input: OverrideMerchantInput, ctx: GatewayCtx): Promise<OverrideMerchantResult>;
   overrideTransaction(input: OverrideTransactionInput, ctx: GatewayCtx): Promise<OverrideTransactionResult>;
@@ -64,4 +94,6 @@ export interface CategorizationGateway {
     input: ProposeCategoryChangeInput,
     ctx: GatewayCtx,
   ): Promise<ProposeCategoryChangeResult>;
+  updateDescription(input: UpdateCategoryDescriptionInput, ctx: GatewayCtx): Promise<UpdateCategoryDescriptionResult>;
+  resetDescription(input: ResetCategoryDescriptionInput, ctx: GatewayCtx): Promise<ResetCategoryDescriptionResult>;
 }

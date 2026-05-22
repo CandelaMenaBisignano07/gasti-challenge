@@ -13,6 +13,7 @@ export const overrideTransactionInput = z.object({
 
 export const createCategoryInput = z.object({
   name: z.string().min(1).max(24),
+  description: z.string().max(240).optional(),
 });
 
 export const renameCategoryInput = z.object({
@@ -28,4 +29,13 @@ export const proposeCategoryChangeInput = z.object({
   intent: z.enum(['delete', 'rename']),
   name: z.string().min(1),
   newName: z.string().min(1).max(24).optional(),
+});
+
+export const updateCategoryDescriptionInput = z.object({
+  name: z.string().min(1),
+  description: z.string().max(240),
+});
+
+export const resetCategoryDescriptionInput = z.object({
+  name: z.string().min(1),
 });

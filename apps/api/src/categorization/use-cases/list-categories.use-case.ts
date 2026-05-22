@@ -1,5 +1,6 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { CategoryRegistry } from '../../shared/providers/category-registry';
+import { CategoryDescriptionResolver } from '../../shared/providers/category-description-resolver';
 import {
   CATEGORIES_REPOSITORY,
   type CategoriesRepository,
@@ -8,8 +9,8 @@ import {
 export interface CategoryListing {
   name: string;
   isCustom: boolean;
+  description: string;
 }
-
 export interface ListCategoriesResult {
   categories: CategoryListing[];
 }
@@ -19,11 +20,13 @@ export class ListCategories {
   constructor(
     @Inject(CATEGORIES_REPOSITORY) private readonly repo: CategoriesRepository,
     private readonly registry: CategoryRegistry,
+    private readonly resolver: CategoryDescriptionResolver,
   ) {}
 
   async execute(): Promise<ListCategoriesResult> {
-    const custom = new Set(await this.repo.all());
-    const all = await this.registry.all();
-    return { categories: all.map((name) => ({ name, isCustom: custom.has(name) })) };
+    const resolved = await this.resolver.resolveAll();
+    return {
+      categories: resolved.map((c) => ({ name: c.name, isCustom: c.isCustom, description: c.description })),
+    };
   }
 }
