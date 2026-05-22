@@ -1,10 +1,6 @@
 import { Inject, Injectable, Logger } from '@nestjs/common';
 import { CLOCK, type Clock } from '../../shared/providers/clock';
 import {
-  USERS_REPOSITORY,
-  type UsersRepository,
-} from '../../users/domain/users.repository';
-import {
   TRANSACTIONS_REPOSITORY,
   type TransactionsRepository,
 } from '../../transactions/domain/transactions.repository';
@@ -19,31 +15,30 @@ import {
 } from '../../proactive/domain/proactive-event-bus';
 import type { NoticeReason, PaymentKind } from '../../proactive/domain/pending-prompt';
 import type { NewPendingPrompt } from '../../proactive/domain/pending-prompts.repository';
-import { MP_PAYMENT_SOURCE, type MpPaymentSource } from '../domain/mp-payment-source';
 import { PAYMENT_CLASSIFIER, type PaymentClassifier } from '../domain/payment-classifier';
 import { isCompletedPayment } from '../domain/is-completed-payment';
 import { mapMpStatusToTransactionStatus } from '../domain/map-mp-status';
 import type { MpPayment } from '../domain/mp-payment';
+import type { User } from '../../users/domain/user';
 
 export interface ProcessMpEventInput {
-  readonly paymentId: string;
-  readonly mpUserId: string;
+  readonly payment: MpPayment;
+  readonly user: User;
 }
 
 /**
- * Orchestrates a Mercado Pago webhook event into proactive state (spec §5).
- * Resolves the account, fetches the payment, then dispatches one of three
- * branches: reversal of an existing tx, refund-before-prompt, or a brand-new
- * completed payment. Idempotent: dedupes on the transactions and
- * pending-prompts repositories before any insert.
+ * Orchestrates a single Mercado Pago payment event into proactive state
+ * (spec §5). Caller (PollMpPayments) hydrates the payment + resolves the
+ * account; this use-case dispatches one of three branches: reversal of an
+ * existing tx, refund-before-prompt, or a brand-new completed payment.
+ * Idempotent: dedupes on the transactions and pending-prompts repositories
+ * before any insert.
  */
 @Injectable()
 export class ProcessMpEvent {
   private readonly log = new Logger(ProcessMpEvent.name);
 
   constructor(
-    @Inject(USERS_REPOSITORY) private readonly users: UsersRepository,
-    @Inject(MP_PAYMENT_SOURCE) private readonly payments: MpPaymentSource,
     @Inject(PAYMENT_CLASSIFIER) private readonly classifier: PaymentClassifier,
     @Inject(TRANSACTIONS_REPOSITORY) private readonly transactions: TransactionsRepository,
     @Inject(PENDING_PROMPTS_REPOSITORY) private readonly prompts: PendingPromptsRepository,
@@ -52,15 +47,9 @@ export class ProcessMpEvent {
     @Inject(CLOCK) private readonly clock: Clock,
   ) {}
 
-  async execute({ paymentId, mpUserId }: ProcessMpEventInput): Promise<void> {
-    const user = await this.users.findByMpUserId(mpUserId);
-    if (!user) {
-      // Unknown account — pre/post-disconnect race. Drop silently.
-      return;
-    }
-
+  async execute({ payment, user }: ProcessMpEventInput): Promise<void> {
+    const paymentId = String(payment.id);
     const existingTx = await this.transactions.findByMpPaymentId(user.id, paymentId);
-    const payment = await this.payments.getById(paymentId, user.id);
     const newStatus = mapMpStatusToTransactionStatus(payment.status);
 
     // BRANCH 1 — the payment already exists as a transaction.

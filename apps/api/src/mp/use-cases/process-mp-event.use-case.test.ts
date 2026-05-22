@@ -3,9 +3,7 @@ import { ProcessMpEvent } from './process-mp-event.use-case';
 import { MarkTransactionReversed } from '../../transactions/use-cases/mark-transaction-reversed.use-case';
 import { fakeTransactionsRepo, fixedClock } from '../../shared/testing/fakes';
 import type { User } from '../../users/domain/user';
-import type { UsersRepository } from '../../users/domain/users.repository';
 import type { MpPayment } from '../domain/mp-payment';
-import type { MpPaymentSource } from '../domain/mp-payment-source';
 import type { ClassifyArgs, PaymentClassifier } from '../domain/payment-classifier';
 import type { Classification } from '../domain/classification';
 import type { PendingPrompt } from '../../proactive/domain/pending-prompt';
@@ -32,29 +30,6 @@ function makeUser(overrides: Partial<User> = {}): User {
     mpConnectedAt: null,
     createdAt: new Date('2026-01-01'),
     ...overrides,
-  };
-}
-
-function fakeUsersRepo(user: User | null): UsersRepository {
-  return {
-    async getCurrent() {
-      if (!user) throw new Error('no user');
-      return user;
-    },
-    async findByMpUserId(mpUserId) {
-      return user && user.mpUserId === mpUserId ? user : null;
-    },
-    async linkMpAccount() {},
-    async updateMpTokens() {},
-    async unlinkMpAccount() {},
-  };
-}
-
-function fakePaymentSource(payment: MpPayment): MpPaymentSource {
-  return {
-    async getById() {
-      return payment;
-    },
   };
 }
 
@@ -193,7 +168,7 @@ function makeTx(overrides: Partial<Transaction> = {}): Transaction {
 }
 
 function build(opts: {
-  user: User | null;
+  user: User;
   payment: MpPayment;
   txs?: Transaction[];
   prompts?: PendingPrompt[];
@@ -204,8 +179,6 @@ function build(opts: {
   const bus = fakeBus();
   const classifier = fakeClassifier(opts.verdict);
   const useCase = new ProcessMpEvent(
-    fakeUsersRepo(opts.user),
-    fakePaymentSource(opts.payment),
     classifier.classifier,
     txRepo,
     promptsRepo.repo,
@@ -213,16 +186,24 @@ function build(opts: {
     new MarkTransactionReversed(txRepo, fixedClock('2026-05-18')),
     fixedClock('2026-05-18'),
   );
-  return { useCase, txRepo, promptsRepo, bus, classifier };
+  return {
+    useCase,
+    txRepo,
+    promptsRepo,
+    bus,
+    classifier,
+    user: opts.user,
+    payment: opts.payment,
+  };
 }
 
 test('Branch 3: new completed payment → classifier called → confirm prompt published', async () => {
-  const { useCase, promptsRepo, bus, classifier } = build({
+  const { useCase, promptsRepo, bus, classifier, user, payment } = build({
     user: makeUser(),
     payment: makePayment(),
   });
 
-  await useCase.execute({ paymentId: 'PAY_1', mpUserId: MP_USER_ID });
+  await useCase.execute({ payment, user });
 
   expect(classifier.calls).toHaveLength(1);
   expect(classifier.calls[0].kind).toBe('expense');
@@ -241,25 +222,25 @@ test('Branch 3: new completed payment → classifier called → confirm prompt p
 });
 
 test('Branch 3: income when collector_id matches the user mpUserId', async () => {
-  const { useCase, promptsRepo, classifier } = build({
+  const { useCase, promptsRepo, classifier, user, payment } = build({
     user: makeUser(),
     payment: makePayment({ collector_id: Number(MP_USER_ID) }),
   });
 
-  await useCase.execute({ paymentId: 'PAY_1', mpUserId: MP_USER_ID });
+  await useCase.execute({ payment, user });
 
   expect(classifier.calls[0].kind).toBe('income');
   expect(promptsRepo.rows()[0].kind).toBe('income');
 });
 
 test('Branch 1: reversal of an existing tx → updateStatus + auto/notice prompt + published', async () => {
-  const { useCase, txRepo, promptsRepo, bus } = build({
+  const { useCase, txRepo, promptsRepo, bus, user, payment } = build({
     user: makeUser(),
     payment: makePayment({ status: 'refunded', status_detail: 'refunded' }),
     txs: [makeTx()],
   });
 
-  await useCase.execute({ paymentId: 'PAY_1', mpUserId: MP_USER_ID });
+  await useCase.execute({ payment, user });
 
   const tx = await txRepo.getById('default-user', 'txn_001');
   expect(tx?.status).toBe('refunded');
@@ -277,38 +258,38 @@ test('Branch 1: reversal of an existing tx → updateStatus + auto/notice prompt
 });
 
 test('Branch 1: chargeback maps noticeReason to mp_chargeback', async () => {
-  const { useCase, promptsRepo } = build({
+  const { useCase, promptsRepo, user, payment } = build({
     user: makeUser(),
     payment: makePayment({ status: 'charged_back', status_detail: 'charged_back' }),
     txs: [makeTx()],
   });
 
-  await useCase.execute({ paymentId: 'PAY_1', mpUserId: MP_USER_ID });
+  await useCase.execute({ payment, user });
 
   expect(promptsRepo.rows()[0].noticeReason).toBe('mp_chargeback');
 });
 
 test('Branch 1: idempotent — same status as existing tx → drop, nothing published', async () => {
-  const { useCase, promptsRepo, bus } = build({
+  const { useCase, promptsRepo, bus, user, payment } = build({
     user: makeUser(),
     payment: makePayment({ status: 'approved' }),
     txs: [makeTx({ status: 'active' })],
   });
 
-  await useCase.execute({ paymentId: 'PAY_1', mpUserId: MP_USER_ID });
+  await useCase.execute({ payment, user });
 
   expect(promptsRepo.rows()).toHaveLength(0);
   expect(bus.published).toHaveLength(0);
 });
 
 test('Branch 2: refund before prompt shown → markDiscarded + published', async () => {
-  const { useCase, promptsRepo, bus } = build({
+  const { useCase, promptsRepo, bus, user, payment } = build({
     user: makeUser(),
     payment: makePayment({ status: 'refunded', status_detail: 'refunded' }),
     prompts: [makePrompt()],
   });
 
-  await useCase.execute({ paymentId: 'PAY_1', mpUserId: MP_USER_ID });
+  await useCase.execute({ payment, user });
 
   const rows = promptsRepo.rows();
   expect(rows).toHaveLength(1);
@@ -320,40 +301,27 @@ test('Branch 2: refund before prompt shown → markDiscarded + published', async
 });
 
 test('Branch 2: not completed and no pending prompt → drop', async () => {
-  const { useCase, promptsRepo, bus } = build({
+  const { useCase, promptsRepo, bus, user, payment } = build({
     user: makeUser(),
     payment: makePayment({ status: 'in_process', status_detail: 'pending' }),
   });
 
-  await useCase.execute({ paymentId: 'PAY_1', mpUserId: MP_USER_ID });
+  await useCase.execute({ payment, user });
 
   expect(promptsRepo.rows()).toHaveLength(0);
   expect(bus.published).toHaveLength(0);
 });
 
 test('Idempotency: duplicate mpPaymentId already pending → no second prompt', async () => {
-  const { useCase, promptsRepo, bus, classifier } = build({
+  const { useCase, promptsRepo, bus, classifier, user, payment } = build({
     user: makeUser(),
     payment: makePayment(),
     prompts: [makePrompt()],
   });
 
-  await useCase.execute({ paymentId: 'PAY_1', mpUserId: MP_USER_ID });
+  await useCase.execute({ payment, user });
 
   expect(promptsRepo.rows()).toHaveLength(1);
-  expect(bus.published).toHaveLength(0);
-  expect(classifier.calls).toHaveLength(0);
-});
-
-test('Unknown mpUserId → drop, nothing happens', async () => {
-  const { useCase, promptsRepo, bus, classifier } = build({
-    user: makeUser(),
-    payment: makePayment(),
-  });
-
-  await useCase.execute({ paymentId: 'PAY_1', mpUserId: 'not-a-user' });
-
-  expect(promptsRepo.rows()).toHaveLength(0);
   expect(bus.published).toHaveLength(0);
   expect(classifier.calls).toHaveLength(0);
 });

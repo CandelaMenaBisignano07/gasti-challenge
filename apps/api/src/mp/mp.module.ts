@@ -9,9 +9,7 @@ import { RefreshMpToken } from './use-cases/refresh-mp-token.use-case';
 import { DisconnectMpAccount } from './use-cases/disconnect-mp-account.use-case';
 import { ProcessMpEvent } from './use-cases/process-mp-event.use-case';
 import { MpOAuthController } from './interface/mp-oauth.controller';
-import { MP_PAYMENT_SOURCE } from './domain/mp-payment-source';
 import { PAYMENT_CLASSIFIER } from './domain/payment-classifier';
-import { MercadoPagoProvider } from './providers/mercado-pago.provider';
 import { HttpPaymentClassifier } from './providers/http-payment-classifier';
 
 // SharedModule is @Global() — CLOCK resolves without an explicit import here.
@@ -25,9 +23,8 @@ import { HttpPaymentClassifier } from './providers/http-payment-classifier';
     RefreshMpToken,
     DisconnectMpAccount,
     ProcessMpEvent,
-    { provide: MP_PAYMENT_SOURCE, useClass: MercadoPagoProvider },
     { provide: PAYMENT_CLASSIFIER, useClass: HttpPaymentClassifier },
   ],
-  exports: [MpOAuthClient, RefreshMpToken, MP_PAYMENT_SOURCE, PAYMENT_CLASSIFIER],
+  exports: [MpOAuthClient, RefreshMpToken, PAYMENT_CLASSIFIER],
 })
 export class MpModule {}
