@@ -107,6 +107,16 @@ export class BackfillMpPayments {
     // Drop `account_fund` (internal wallet top-ups) before doing any work.
     const filtered = results.filter((p) => isAcceptedOperationType(p.operation_type));
 
+    // Dedupe against existing transactions — backfilling a window already
+    // partially covered by the cron poller (or running backfill twice) must
+    // not create duplicate transactions for the same mpPaymentId. Shared
+    // invariant with `ProcessMpEvent`.
+    const fresh: MpPayment[] = [];
+    for (const p of filtered) {
+      const found = await this.transactions.findByMpPaymentId(user.id, String(p.id));
+      if (!found) fresh.push(p);
+    }
+
     const byOperationType: Record<OperationType, number> = {
       regular_payment: 0,
       money_transfer: 0,
@@ -115,17 +125,16 @@ export class BackfillMpPayments {
     };
 
     let lowConfidenceCount = 0;
-    let totalImported = 0;
 
-    if (filtered.length > 0) {
+    if (fresh.length > 0) {
       const classifications = await this.batchClassifier.classifyBatch({
         user,
-        payments: filtered,
+        payments: fresh,
       });
 
       // Map per-index — the contract guarantees same order as input.
-      for (let i = 0; i < filtered.length; i++) {
-        const payment = filtered[i];
+      for (let i = 0; i < fresh.length; i++) {
+        const payment = fresh[i];
         const classification = classifications[i];
         if (!classification) {
           this.log.warn(
@@ -158,10 +167,10 @@ export class BackfillMpPayments {
           needsReview: lowConfidence,
           operationType: opType,
         });
-
-        totalImported += 1;
       }
     }
+
+    const totalImported = fresh.length;
 
     const summary = await this.summaries.create({
       userId: user.id,

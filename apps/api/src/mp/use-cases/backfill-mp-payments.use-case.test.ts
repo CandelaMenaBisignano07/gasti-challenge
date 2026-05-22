@@ -95,7 +95,8 @@ describe('BackfillMpPayments — happy path', () => {
       needsReview: input.needsReview ?? false,
       operationType: input.operationType ?? null,
     }));
-    const transactions = { create } as unknown as TransactionsRepository;
+    const findByMpPaymentId = mock(async () => null);
+    const transactions = { create, findByMpPaymentId } as unknown as TransactionsRepository;
 
     const createdSummary: BackfillSummary = {
       id: 'sum1',
@@ -203,5 +204,145 @@ describe('BackfillMpPayments — happy path', () => {
 
     // Refresh path NOT exercised (token expires in 2030).
     expect(refreshExecute.mock.calls).toHaveLength(0);
+  });
+
+  test('skips payments that already exist as transactions', async () => {
+    const payments: MpPayment[] = [
+      payment({ id: 1, operation_type: 'regular_payment', transaction_amount: 250 }),
+      payment({ id: 2, operation_type: 'money_transfer', transaction_amount: 1000 }),
+      payment({ id: 3, operation_type: 'account_fund', transaction_amount: 999 }), // filtered
+      payment({ id: 4, operation_type: 'recurring_payment', transaction_amount: 50 }),
+    ];
+
+    const searchResult: MpPaymentsSearchResult = {
+      results: payments,
+      truncated: false,
+      totalReported: 4,
+    };
+    const search = mock(async () => searchResult);
+    const gateway = { search } as unknown as MpPaymentsSearchGateway;
+
+    // Only the fresh payments (2 and 4) are classified — payment 1 is deduped,
+    // payment 3 was filtered by operation type.
+    const classifications: Classification[] = [
+      { category: 'transporte', suggestedDescription: 'Transfer', confidence: 0.85 },
+      { category: 'otros', suggestedDescription: 'Subscription', confidence: 0.2 }, // low
+    ];
+    const classifyBatch = mock(async () => classifications);
+    const batchClassifier = { classifyBatch } as unknown as BatchClassifier;
+
+    const create = mock(async (input: CreateTransactionInput): Promise<Transaction> => ({
+      id: `txn_${input.mpPaymentId ?? 'x'}`,
+      date: input.date,
+      amount: input.amount,
+      currency: 'ARS',
+      category: input.category,
+      description: input.description,
+      merchant: input.merchant,
+      userId: input.userId,
+      direction: input.direction,
+      status: input.status ?? 'active',
+      statusChangedAt: null,
+      source: input.source,
+      mpPaymentId: input.mpPaymentId ?? null,
+      needsReview: input.needsReview ?? false,
+      operationType: input.operationType ?? null,
+    }));
+    // Payment id=1 already exists as a transaction; all others are fresh.
+    const existing: Transaction = {
+      id: 'txn_1',
+      date: '2026-05-21',
+      amount: 250,
+      currency: 'ARS',
+      category: 'comida',
+      description: 'Lunch',
+      merchant: 'Test Merchant',
+      userId: 'u1',
+      direction: 'expense',
+      status: 'active',
+      statusChangedAt: null,
+      source: 'mercadopago',
+      mpPaymentId: '1',
+      needsReview: false,
+      operationType: 'regular_payment',
+    };
+    const findByMpPaymentId = mock(async (_userId: string, mpPaymentId: string) =>
+      mpPaymentId === '1' ? existing : null,
+    );
+    const transactions = {
+      create,
+      findByMpPaymentId,
+    } as unknown as TransactionsRepository;
+
+    const createdSummary: BackfillSummary = {
+      id: 'sum1',
+      userId: 'u1',
+      scope: '7d',
+      rangeBegin: new Date('2026-05-15T00:00:00.000Z'),
+      rangeEnd: new Date('2026-05-22T00:00:00.000Z'),
+      totalImported: 2,
+      byOperationType: {
+        regular_payment: 0,
+        money_transfer: 1,
+        recurring_payment: 1,
+        account_fund: 0,
+      },
+      lowConfidenceCount: 1,
+      truncated: false,
+      status: 'visible',
+      createdAt: new Date('2026-05-22T00:00:00.000Z'),
+    };
+    const summariesCreate = mock(async () => createdSummary);
+    const summaries = {
+      create: summariesCreate,
+    } as unknown as BackfillSummariesRepository;
+
+    const cursorUpsert = mock(async () => {});
+    const cursors = {
+      getByUserId: mock(async () => null),
+      upsert: cursorUpsert,
+    } satisfies MpPollCursorsRepository;
+
+    const publishBackfillSummary = mock(() => {});
+    const bus = {
+      publish: () => {},
+      subscribe: () => () => {},
+      publishBackfillSummary,
+      subscribeBackfillSummaries: () => () => {},
+    } satisfies ProactiveEventBus;
+
+    const getById = mock(async () => user);
+    const users = { getById } as unknown as UsersRepository;
+
+    const refreshExecute = mock(async () => 'tok');
+    const refresh = { execute: refreshExecute } as unknown as RefreshMpToken;
+
+    const now = new Date('2026-05-22T00:00:00.000Z');
+    const clock: Clock = { now: () => now };
+
+    const uc = new BackfillMpPayments(
+      users,
+      cursors,
+      gateway,
+      batchClassifier,
+      transactions,
+      summaries,
+      bus,
+      refresh,
+      clock,
+    );
+
+    const result = await uc.execute({ userId: 'u1', scope: '7d' });
+
+    // Payment 1 deduped; payment 3 (account_fund) filtered earlier; total = 2.
+    expect(result.totalImported).toBe(2);
+    expect(create.mock.calls).toHaveLength(2);
+
+    // Only the fresh payments (2 of them) were passed to classifyBatch.
+    expect(classifyBatch.mock.calls).toHaveLength(1);
+    expect(classifyBatch.mock.calls[0][0].payments).toHaveLength(2);
+
+    // lowConfidenceCount reflects only the new payments' classifications.
+    expect(result.lowConfidenceCount).toBe(1);
   });
 });
