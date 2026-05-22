@@ -20,3 +20,6 @@ export const pendingPromptsFile = (): string =>
 
 export const mpPollCursorsFile = (): string =>
   process.env.MP_POLL_CURSORS_FILE || path.join(DATA_DIR, 'mp-poll-cursors.json');
+
+export const backfillSummariesFile = (): string =>
+  process.env.BACKFILL_SUMMARIES_FILE || path.join(DATA_DIR, 'backfill-summaries.json');
