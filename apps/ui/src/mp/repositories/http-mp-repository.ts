@@ -3,6 +3,7 @@ import type {
   BackfillScope,
   MpConnection,
   MpRepository,
+  OperationType,
 } from '@/mp/domain/mp-connection';
 
 const DEFAULT_API_BASE_URL = 'http://localhost:3001';
@@ -48,13 +49,14 @@ export class HttpMpRepository implements MpRepository {
       totalImported: number;
       lowConfidenceCount: number;
       truncated: boolean;
+      byOperationType: Record<OperationType, number>;
     };
-    // The API also returns byOperationType; we surface only the fields this UI consumes.
     return {
       id: data.id,
       totalImported: data.totalImported,
       lowConfidenceCount: data.lowConfidenceCount,
       truncated: data.truncated,
+      byOperationType: data.byOperationType,
     };
   }
 }

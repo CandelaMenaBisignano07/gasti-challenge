@@ -6,20 +6,29 @@ import { GastiMessage } from '@/chat/components/gasti-message';
 import { ThinkingIndicator } from '@/chat/components/thinking-indicator';
 import { ProactivePromptCard } from '@/proactive/components/proactive-prompt-card';
 import { ProactiveNoticeCard } from '@/proactive/components/proactive-notice-card';
+import { BackfillSummaryCard } from '@/proactive/components/backfill-summary-card';
 import { useProactive } from '@/proactive/infrastructure/use-proactive';
 import type { Message } from '@/chat/domain/message';
 import type { PendingPrompt } from '@/proactive/domain/pending-prompt';
+import type { BackfillRunSummary } from '@/mp/domain/mp-connection';
 
 type ConversationThreadProps = {
   messages: Message[];
   pending?: boolean;
+  backfillSummary?: BackfillRunSummary | null;
+  onDismissBackfill?: () => void;
 };
 
 type ThreadItem =
   | { type: 'message'; at: number; message: Message }
   | { type: 'prompt'; at: number; prompt: PendingPrompt };
 
-export function ConversationThread({ messages, pending = false }: ConversationThreadProps) {
+export function ConversationThread({
+  messages,
+  pending = false,
+  backfillSummary = null,
+  onDismissBackfill,
+}: ConversationThreadProps) {
   const { prompts } = useProactive();
 
   // Interleave chat messages and proactive cards in chronological order.
@@ -62,6 +71,12 @@ export function ConversationThread({ messages, pending = false }: ConversationTh
       aria-atomic="false"
       className="flex flex-col gap-s7 py-s6"
     >
+      {backfillSummary && (
+        <BackfillSummaryCard
+          summary={backfillSummary}
+          onDismiss={onDismissBackfill ?? (() => {})}
+        />
+      )}
       {items.map((item) => {
         if (item.type === 'message') {
           return item.message.role === 'user' ? (

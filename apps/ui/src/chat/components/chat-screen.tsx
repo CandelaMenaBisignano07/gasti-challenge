@@ -7,10 +7,19 @@ import { Header } from '@/chat/components/header';
 import { LandingHero } from '@/chat/components/landing-hero';
 import { MeshBackground } from '@/shared/mesh/mesh-background';
 import { useChat } from '@/chat/infrastructure/use-chat';
+import type { BackfillRunSummary } from '@/mp/domain/mp-connection';
 
-export function ChatScreen() {
+type ChatScreenProps = {
+  backfillSummary?: BackfillRunSummary | null;
+  onDismissBackfill?: () => void;
+};
+
+export function ChatScreen({ backfillSummary = null, onDismissBackfill }: ChatScreenProps = {}) {
   const { messages, status, streamingMessage, view, sendMessage, reset } = useChat();
-  const isLanding = view === 'landing';
+  // A pending backfill summary acts like an in-progress conversation: it
+  // forces the chat surface so the user sees the summary card immediately
+  // instead of the landing hero.
+  const isLanding = view === 'landing' && backfillSummary === null;
   const composerState = status === 'thinking' ? 'thinking' : 'idle';
   const threadMessages = streamingMessage ? [...messages, streamingMessage] : messages;
 
@@ -38,6 +47,8 @@ export function ChatScreen() {
             <ConversationThread
               messages={threadMessages}
               pending={status === 'thinking' && streamingMessage === null}
+              backfillSummary={backfillSummary}
+              onDismissBackfill={onDismissBackfill}
             />
           )}
           {landingMounted && (

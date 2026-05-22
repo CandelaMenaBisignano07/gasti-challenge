@@ -36,5 +36,18 @@ export default function MpCallbackPage() {
     );
   }
 
-  return <BackfillModal onDone={() => router.replace('/')} />;
+  return (
+    <BackfillModal
+      onDone={(summary) => {
+        if (summary) {
+          try {
+            sessionStorage.setItem('gasti-backfill-pending', JSON.stringify(summary));
+          } catch {
+            // SSR / disabled storage — fall through; the card just doesn't appear.
+          }
+        }
+        router.replace('/');
+      }}
+    />
+  );
 }

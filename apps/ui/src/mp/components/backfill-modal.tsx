@@ -4,11 +4,15 @@ import { useState } from 'react';
 import { Card } from '@/shared/ui/card';
 import { OptionPillStack } from '@/shared/ui/option-pill-stack';
 import { useMpConnection } from '@/mp/infrastructure/use-mp-connection';
-import type { BackfillScope } from '@/mp/domain/mp-connection';
+import type { BackfillRunSummary, BackfillScope } from '@/mp/domain/mp-connection';
 
 type Choice = BackfillScope | 'skip';
 
-export function BackfillModal({ onDone }: { onDone: () => void }) {
+type BackfillModalProps = {
+  onDone: (summary: BackfillRunSummary | null) => void;
+};
+
+export function BackfillModal({ onDone }: BackfillModalProps) {
   const [choice, setChoice] = useState<Choice>('skip');
   const [phase, setPhase] = useState<'choose' | 'running'>('choose');
   const [error, setError] = useState<string | null>(null);
@@ -17,13 +21,13 @@ export function BackfillModal({ onDone }: { onDone: () => void }) {
   const submit = async () => {
     setError(null);
     if (choice === 'skip') {
-      onDone();
+      onDone(null);
       return;
     }
     setPhase('running');
     try {
-      await triggerBackfill(choice);
-      onDone();
+      const result = await triggerBackfill(choice);
+      onDone(result);
     } catch (e) {
       setError((e as Error).message);
       setPhase('choose');
