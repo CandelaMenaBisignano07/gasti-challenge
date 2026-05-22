@@ -52,7 +52,8 @@ export const mastra = new Mastra({
             categories.map((c) => c.name),
           );
         } catch {
-          requestContext.set('categories', [...DEFAULT_CATEGORIES]);
+          // TODO Task 8.2: rewrite to set 'categoriesWithDescriptions' instead.
+          requestContext.set('categories', DEFAULT_CATEGORIES.map((c) => c.name));
         }
         await next();
       },

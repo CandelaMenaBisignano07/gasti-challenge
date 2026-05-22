@@ -33,7 +33,7 @@ export class CreateCategory {
     if (await this.registry.exists(name)) {
       throw new DomainError('VALIDATION_ERROR', `La categoría "${name}" ya existe.`);
     }
-    await this.repo.add(name);
+    await this.repo.add(name, '');
     return { name };
   }
 }

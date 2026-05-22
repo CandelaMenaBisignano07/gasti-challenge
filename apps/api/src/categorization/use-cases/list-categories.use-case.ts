@@ -22,7 +22,7 @@ export class ListCategories {
   ) {}
 
   async execute(): Promise<ListCategoriesResult> {
-    const custom = new Set(await this.repo.all());
+    const custom = new Set((await this.repo.all()).map((c) => c.name));
     const all = await this.registry.all();
     return { categories: all.map((name) => ({ name, isCustom: custom.has(name) })) };
   }

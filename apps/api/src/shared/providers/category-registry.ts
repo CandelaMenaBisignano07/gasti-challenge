@@ -1,20 +1,19 @@
 import { Inject, Injectable } from '@nestjs/common';
-import { DEFAULT_CATEGORIES } from '../domain/category';
+import { DEFAULT_CATEGORY_NAMES } from '../domain/category';
 import {
   CATEGORIES_REPOSITORY,
   type CategoriesRepository,
 } from '../domain/custom-categories';
 
-/** Resolves the live set of valid categories: the seven defaults + custom ones. */
 @Injectable()
 export class CategoryRegistry {
   constructor(
     @Inject(CATEGORIES_REPOSITORY) private readonly repo: CategoriesRepository,
   ) {}
 
-  /** Defaults first, then custom categories. */
   async all(): Promise<string[]> {
-    return [...DEFAULT_CATEGORIES, ...(await this.repo.all())];
+    const customs = await this.repo.all();
+    return [...DEFAULT_CATEGORY_NAMES, ...customs.map((c) => c.name)];
   }
 
   async exists(name: string): Promise<boolean> {
@@ -22,10 +21,11 @@ export class CategoryRegistry {
   }
 
   isDefault(name: string): boolean {
-    return (DEFAULT_CATEGORIES as readonly string[]).includes(name);
+    return DEFAULT_CATEGORY_NAMES.includes(name);
   }
 
   async isCustom(name: string): Promise<boolean> {
-    return (await this.repo.all()).includes(name);
+    const customs = await this.repo.all();
+    return customs.some((c) => c.name === name);
   }
 }
