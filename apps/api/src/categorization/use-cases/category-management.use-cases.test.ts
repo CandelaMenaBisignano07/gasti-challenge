@@ -28,7 +28,7 @@ test('create-category normalizes the name and persists it', async () => {
   const useCase = new CreateCategory(repo, new CategoryRegistry(repo));
   const result = await useCase.execute({ name: '  Mascotas ' });
   expect(result).toEqual({ name: 'mascotas' });
-  expect(await repo.all()).toEqual(['mascotas']);
+  expect(await repo.all()).toEqual([{ name: 'mascotas', description: '' }]);
 });
 
 test('create-category rejects a name that collides with a default', async () => {
@@ -63,7 +63,7 @@ test('rename-category cascades into transactions, overrides and budgets', async 
   const result = await useCase.execute({ from: 'mascotas', to: 'Animales' });
 
   expect(result).toEqual({ from: 'mascotas', to: 'animales' });
-  expect(await categories.all()).toEqual(['animales']);
+  expect(await categories.all()).toEqual([{ name: 'animales', description: '' }]);
   expect((await txs.all()).find((t) => t.id === 'txn_001')?.category).toBe('animales');
   expect((await overrides.overrides()).merchants['Pet Shop']).toBe('animales');
   expect((await overrides.overrides()).transactions.txn_003).toBe('animales');
@@ -117,7 +117,7 @@ test('rename-category treats a rename to the same normalized name as a no-op', a
   );
   const result = await useCase.execute({ from: 'mascotas', to: 'Mascotas' });
   expect(result).toEqual({ from: 'mascotas', to: 'mascotas' });
-  expect(await categories.all()).toEqual(['mascotas']);
+  expect(await categories.all()).toEqual([{ name: 'mascotas', description: '' }]);
 });
 
 test('delete-category falls everything back to otros and removes the category', async () => {

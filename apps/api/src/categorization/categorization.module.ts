@@ -9,6 +9,9 @@ import { DeleteCategory } from './use-cases/delete-category.use-case';
 import { ListCategories } from './use-cases/list-categories.use-case';
 import { ProposeCategoryChange } from './use-cases/propose-category-change.use-case';
 import { CategorizationController } from './interface/categorization.controller';
+import { JsonDefaultCategoryOverridesRepository } from './repositories/json-default-category-overrides.repository';
+import { DEFAULT_CATEGORY_OVERRIDES_REPOSITORY } from '../shared/domain/default-category-overrides';
+import { CategoryDescriptionResolver } from '../shared/providers/category-description-resolver';
 
 @Module({
   imports: [TransactionsModule, BudgetsModule],
@@ -21,6 +24,9 @@ import { CategorizationController } from './interface/categorization.controller'
     DeleteCategory,
     ListCategories,
     ProposeCategoryChange,
+    CategoryDescriptionResolver,
+    { provide: DEFAULT_CATEGORY_OVERRIDES_REPOSITORY, useClass: JsonDefaultCategoryOverridesRepository },
   ],
+  exports: [CategoryDescriptionResolver, DEFAULT_CATEGORY_OVERRIDES_REPOSITORY],
 })
 export class CategorizationModule {}
