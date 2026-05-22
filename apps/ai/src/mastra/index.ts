@@ -18,6 +18,7 @@ import { makeGastiAgent } from '../agent/gasti-agent';
 import { buildMastraStorage } from './storage';
 import { buildGastiMemory } from './memory';
 import { DEFAULT_CATEGORIES } from '../shared/domain/category';
+import { classifyTransactionWorkflow } from '../categorization/workflows/classify-transaction.workflow';
 
 const api = makeApiClient();
 
@@ -37,6 +38,7 @@ const gasti = makeGastiAgent({ tools, memory: buildGastiMemory() });
 
 export const mastra = new Mastra({
   agents: { gasti },
+  workflows: { classifyTransaction: classifyTransactionWorkflow },
   storage: buildMastraStorage(),
   server: {
     middleware: [
