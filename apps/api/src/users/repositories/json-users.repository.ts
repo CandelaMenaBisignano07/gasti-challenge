@@ -75,6 +75,13 @@ export class JsonUsersRepository implements UsersRepository {
     return this.toUser(row);
   }
 
+  async getById(userId: string): Promise<User> {
+    const rows = await this.store.read();
+    const row = rows.find((r) => r.id === userId);
+    if (!row) throw new Error(`user ${userId} not found`);
+    return this.toUser(row);
+  }
+
   async findByMpUserId(mpUserId: string): Promise<User | null> {
     const rows = await this.store.read();
     const row = rows.find((r) => r.mpUserId === mpUserId);

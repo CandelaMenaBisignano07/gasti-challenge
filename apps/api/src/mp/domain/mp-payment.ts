@@ -1,3 +1,5 @@
+import type { OperationType } from './operation-type';
+
 /** Minimal local shape of a Mercado Pago payment — only the fields we read. */
 export interface MpPayment {
   id: number | string;
@@ -13,6 +15,11 @@ export interface MpPayment {
     | 'charged_back';
   status_detail: string;
   captured?: boolean;
+  /**
+   * MP's classification of the movement (regular_payment, money_transfer,
+   * recurring_payment, account_fund, ...). May be missing on older payloads.
+   */
+  operation_type?: OperationType | null;
   transaction_amount: number;
   description?: string | null;
   date_approved?: string | null;

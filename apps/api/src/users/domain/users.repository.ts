@@ -11,6 +11,7 @@ export type MpTokenFields = Pick<User,
 
 export interface UsersRepository {
   getCurrent(): Promise<User>;
+  getById(userId: string): Promise<User>;
   findByMpUserId(mpUserId: string): Promise<User | null>;
   linkMpAccount(userId: string, mp: MpLinkFields): Promise<void>;
   updateMpTokens(userId: string, fields: MpTokenFields): Promise<void>;

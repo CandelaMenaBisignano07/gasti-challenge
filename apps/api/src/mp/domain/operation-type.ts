@@ -21,6 +21,11 @@ export const ACCEPTED_OPERATION_TYPES: ReadonlySet<OperationType> = new Set([
   'recurring_payment',
 ]);
 
-export function isAcceptedOperationType(value: string | null | undefined): value is OperationType {
-  return value != null && ACCEPTED_OPERATION_TYPES.has(value as OperationType);
+/**
+ * Spec intent: accept every operation type except `account_fund` (internal
+ * wallet top-ups, never a real expense or income). Missing/unknown values are
+ * accepted defensively — see the docstring on `ACCEPTED_OPERATION_TYPES` above.
+ */
+export function isAcceptedOperationType(value: string | null | undefined): boolean {
+  return value !== 'account_fund';
 }
