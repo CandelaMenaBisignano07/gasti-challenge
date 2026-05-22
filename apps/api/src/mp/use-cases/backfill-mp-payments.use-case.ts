@@ -39,6 +39,7 @@ import {
   type OperationType,
 } from '../domain/operation-type';
 import type { MpPayment } from '../domain/mp-payment';
+import { merchantOf, paymentDirection } from '../domain/mp-payment-extract';
 import { RefreshMpToken } from './refresh-mp-token.use-case';
 
 // Same skew as PollMpPayments — keep the two pipelines consistent.
@@ -149,8 +150,7 @@ export class BackfillMpPayments {
         const opType = normalizeOperationType(payment.operation_type);
         byOperationType[opType] += 1;
 
-        const direction: 'income' | 'expense' =
-          payment.collector_id === Number(user.mpUserId) ? 'income' : 'expense';
+        const direction: 'income' | 'expense' = paymentDirection(payment, user);
         const merchant = merchantOf(payment) ?? 'Mercado Pago';
         const date = dateOf(payment, end);
 
@@ -198,11 +198,6 @@ function normalizeOperationType(
 ): Exclude<OperationType, 'account_fund'> {
   if (value === 'money_transfer' || value === 'recurring_payment') return value;
   return 'regular_payment';
-}
-
-function merchantOf(p: MpPayment): string | null {
-  const itemTitle = p.additional_info?.items?.[0]?.title;
-  return itemTitle ?? p.description ?? null;
 }
 
 /** Picks a YYYY-MM-DD date string from the payment, falling back to `end`. */

@@ -6,6 +6,12 @@ import type {
 } from '../domain/batch-classifier';
 import type { Classification } from '../domain/classification';
 import type { MpPayment } from '../domain/mp-payment';
+import {
+  merchantOf,
+  payerNameOf,
+  paymentDirection,
+} from '../domain/mp-payment-extract';
+import type { User } from '../../users/domain/user';
 import { categorySchema } from '../../shared/domain/category';
 
 const AI_BASE = process.env.AI_BASE_URL?.trim() || 'http://localhost:4111';
@@ -43,7 +49,7 @@ export class HttpBatchClassifier implements BatchClassifier {
     // args.user is reserved for the in-flight per-user categories feature —
     // intentionally not forwarded to apps/ai until that lands (spec §10b,
     // matches HttpPaymentClassifier).
-    const payments = args.payments.map((p) => toClassifyInput(p, args.user.mpUserId));
+    const payments = args.payments.map((p) => toClassifyInput(p, args.user));
 
     const res = await fetch(
       `${AI_BASE}/api/workflows/classify-batch/start-async`,
@@ -71,9 +77,11 @@ export class HttpBatchClassifier implements BatchClassifier {
   }
 }
 
-function toClassifyInput(p: MpPayment, mpUserId: string | null): ClassifyMpEventInput {
-  const kind: 'income' | 'expense' =
-    p.collector_id === Number(mpUserId) ? 'income' : 'expense';
+function toClassifyInput(
+  p: MpPayment,
+  user: Pick<User, 'mpUserId'>,
+): ClassifyMpEventInput {
+  const kind = paymentDirection(p, user);
   const merchant = merchantOf(p);
   const counterparty = kind === 'income' ? payerNameOf(p) : merchant;
   return {
@@ -83,17 +91,4 @@ function toClassifyInput(p: MpPayment, mpUserId: string | null): ClassifyMpEvent
     description: p.description ?? null,
     counterparty,
   };
-}
-
-function merchantOf(p: MpPayment): string | null {
-  const itemTitle = p.additional_info?.items?.[0]?.title;
-  return itemTitle ?? p.description ?? null;
-}
-
-function payerNameOf(p: MpPayment): string | null {
-  const name = [p.payer?.first_name, p.payer?.last_name]
-    .filter((s): s is string => Boolean(s))
-    .join(' ')
-    .trim();
-  return name.length > 0 ? name : null;
 }

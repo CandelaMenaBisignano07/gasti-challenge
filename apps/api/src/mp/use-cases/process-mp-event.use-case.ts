@@ -19,6 +19,11 @@ import { PAYMENT_CLASSIFIER, type PaymentClassifier } from '../domain/payment-cl
 import { isCompletedPayment } from '../domain/is-completed-payment';
 import { mapMpStatusToTransactionStatus } from '../domain/map-mp-status';
 import type { MpPayment } from '../domain/mp-payment';
+import {
+  merchantOf,
+  payerNameOf,
+  paymentDirection,
+} from '../domain/mp-payment-extract';
 import type { User } from '../../users/domain/user';
 
 export interface ProcessMpEventInput {
@@ -100,8 +105,7 @@ export class ProcessMpEvent {
     const duplicate = await this.prompts.findByMpPaymentId(user.id, paymentId);
     if (duplicate) return; // idempotent on MP retries.
 
-    const kind: PaymentKind =
-      payment.collector_id === Number(user.mpUserId) ? 'income' : 'expense';
+    const kind: PaymentKind = paymentDirection(payment, user);
     const merchant = merchantOf(payment);
     const counterparty = kind === 'income' ? payerNameOf(payment) : merchant;
 
@@ -164,19 +168,4 @@ export class ProcessMpEvent {
       createdAt: now,
     };
   }
-}
-
-/** Derives a human-readable merchant from the MP payment shape. */
-function merchantOf(p: MpPayment): string | null {
-  const itemTitle = p.additional_info?.items?.[0]?.title;
-  return itemTitle ?? p.description ?? null;
-}
-
-/** Joins the payer's first and last name when present. */
-function payerNameOf(p: MpPayment): string | null {
-  const name = [p.payer?.first_name, p.payer?.last_name]
-    .filter((s): s is string => Boolean(s))
-    .join(' ')
-    .trim();
-  return name.length > 0 ? name : null;
 }
