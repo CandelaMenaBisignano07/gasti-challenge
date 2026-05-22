@@ -57,5 +57,21 @@ export function makeCategorizationTools(gateway: CategorizationGateway) {
       outputSchema: s.proposeCategoryChangeResult,
       call: (i, c) => gateway.propose(i, c),
     }),
+    updateCategoryDescription: createGatewayTool({
+      id: 'updateCategoryDescription',
+      description:
+        'Set or update the semantic description of a category — the text the classifier uses to decide what fits. Non-destructive, no confirmation needed. Use when the user says things like "comida es solo restaurantes, no super" or "agregale a transporte que incluye peajes". Empty description is allowed (clears it).',
+      inputSchema: s.updateCategoryDescriptionInput,
+      outputSchema: s.updateCategoryDescriptionResult,
+      call: (i, c) => gateway.updateDescription(i, c),
+    }),
+    resetCategoryDescription: createGatewayTool({
+      id: 'resetCategoryDescription',
+      description:
+        'Reset a DEFAULT category description back to its seed. Only the seven defaults can be reset — for custom categories use updateCategoryDescription with empty description to clear. Non-destructive.',
+      inputSchema: s.resetCategoryDescriptionInput,
+      outputSchema: s.resetCategoryDescriptionResult,
+      call: (i, c) => gateway.resetDescription(i, c),
+    }),
   };
 }

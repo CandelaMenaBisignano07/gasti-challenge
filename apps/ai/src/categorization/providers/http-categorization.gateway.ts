@@ -11,5 +11,7 @@ export function makeHttpCategorizationGateway(api: ApiClient): CategorizationGat
     remove: '/categorization/delete-category',
     list: '/categorization/list-categories',
     propose: '/categorization/propose-category-change',
+    updateDescription: '/categorization/update-description',
+    resetDescription: '/categorization/reset-description',
   });
 }
