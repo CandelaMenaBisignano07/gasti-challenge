@@ -12,6 +12,7 @@ type OptionPillStackProps = {
   onPick: (id: string) => void;
   label?: string;
   caption?: string;
+  selectedId?: string;
 };
 
 export function OptionPillStack({
@@ -19,6 +20,7 @@ export function OptionPillStack({
   onPick,
   label = 'Opciones',
   caption,
+  selectedId,
 }: OptionPillStackProps) {
   return (
     <div className="flex flex-col gap-s2">
@@ -28,27 +30,34 @@ export function OptionPillStack({
         </p>
       )}
       <div role="group" aria-label={label} className="flex flex-col gap-s2">
-        {options.map((opt) => (
-          <button
-            key={opt.id}
-            type="button"
-            disabled={opt.disabled}
-            onClick={() => onPick(opt.id)}
-            style={{
-              transition:
-                'transform var(--dur-fast) var(--ease-out), opacity var(--dur-base) var(--ease-out)',
-            }}
-            className={[
-              'w-full rounded-md border border-line-1 bg-surface-tint',
-              'px-s4 py-s3 text-center font-display text-[14px] font-semibold text-ai-ink',
-              'active:scale-[0.985]',
-              'outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ai',
-              'disabled:opacity-30 disabled:pointer-events-none',
-            ].join(' ')}
-          >
-            {opt.label}
-          </button>
-        ))}
+        {options.map((opt) => {
+          const selected = selectedId === opt.id;
+          return (
+            <button
+              key={opt.id}
+              type="button"
+              disabled={opt.disabled}
+              aria-pressed={selected}
+              onClick={() => onPick(opt.id)}
+              style={{
+                transition:
+                  'transform var(--dur-fast) var(--ease-out), opacity var(--dur-base) var(--ease-out)',
+              }}
+              className={[
+                'w-full rounded-md border',
+                selected
+                  ? 'border-ai bg-ai/10 text-ai-ink'
+                  : 'border-line-1 bg-surface-tint text-ai-ink',
+                'px-s4 py-s3 text-center font-display text-[14px] font-semibold',
+                'active:scale-[0.985]',
+                'outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ai',
+                'disabled:opacity-30 disabled:pointer-events-none',
+              ].join(' ')}
+            >
+              {opt.label}
+            </button>
+          );
+        })}
       </div>
     </div>
   );
