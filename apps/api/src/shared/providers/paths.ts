@@ -17,3 +17,6 @@ export const usersFile = (): string =>
 
 export const pendingPromptsFile = (): string =>
   process.env.PENDING_PROMPTS_FILE || path.join(DATA_DIR, 'pending-prompts.json');
+
+export const mpPollCursorsFile = (): string =>
+  process.env.MP_POLL_CURSORS_FILE || path.join(DATA_DIR, 'mp-poll-cursors.json');
