@@ -6,7 +6,13 @@ import { DomainExceptionFilter } from './shared/interface/domain-exception.filte
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
-  app.enableCors();
+  // CORS: explicit origin + credentials so cross-origin fetches from the UI
+  // (especially the tunnel-routed OAuth round-trip) carry cookies correctly.
+  // `Access-Control-Allow-Origin: *` cannot be combined with credentials.
+  app.enableCors({
+    origin: process.env.UI_BASE_URL || 'http://localhost:3000',
+    credentials: true,
+  });
   app.use(cookieParser());
   app.useGlobalFilters(new DomainExceptionFilter());
   const port = Number(process.env.PORT ?? 3001);
