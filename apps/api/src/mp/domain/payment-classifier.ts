@@ -1,8 +1,10 @@
+import type { User } from '../../users/domain/user';
 import type { Classification } from './classification';
 
 export const PAYMENT_CLASSIFIER = 'PAYMENT_CLASSIFIER';
 
 export interface ClassifyArgs {
+  readonly user: User;
   readonly kind: 'income' | 'expense';
   readonly amount: number;
   readonly merchant: string | null;

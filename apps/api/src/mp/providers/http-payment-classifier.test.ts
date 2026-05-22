@@ -2,13 +2,29 @@ import { test, expect, afterEach } from 'bun:test';
 import { HttpPaymentClassifier } from './http-payment-classifier';
 import { FALLBACK_CLASSIFICATION } from '../domain/payment-classifier';
 import type { ClassifyArgs } from '../domain/payment-classifier';
+import type { User } from '../../users/domain/user';
 
 const realFetch = globalThis.fetch;
 afterEach(() => {
   globalThis.fetch = realFetch;
 });
 
+const fakeUser: User = {
+  id: 'default-user',
+  displayName: null,
+  languagePref: null,
+  mpUserId: null,
+  mpAccessToken: null,
+  mpRefreshToken: null,
+  mpTokenExpiresAt: null,
+  mpScope: null,
+  mpLiveMode: null,
+  mpConnectedAt: null,
+  createdAt: new Date('2026-05-01T00:00:00.000Z'),
+};
+
 const args: ClassifyArgs = {
+  user: fakeUser,
   kind: 'expense',
   amount: 3000,
   merchant: 'Starbucks',

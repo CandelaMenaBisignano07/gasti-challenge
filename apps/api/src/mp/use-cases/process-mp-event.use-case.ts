@@ -117,6 +117,7 @@ export class ProcessMpEvent {
     const counterparty = kind === 'income' ? payerNameOf(payment) : merchant;
 
     const classification = await this.classifier.classify({
+      user,
       kind,
       amount: payment.transaction_amount,
       merchant,
