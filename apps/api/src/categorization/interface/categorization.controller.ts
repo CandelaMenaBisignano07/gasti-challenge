@@ -17,12 +17,22 @@ import {
   type ProposeCategoryChangeInput,
 } from '../use-cases/propose-category-change.use-case';
 import {
+  UpdateCategoryDescription,
+  type UpdateCategoryDescriptionInput,
+} from '../use-cases/update-category-description.use-case';
+import {
+  ResetCategoryDescription,
+  type ResetCategoryDescriptionInput,
+} from '../use-cases/reset-category-description.use-case';
+import {
   createCategoryInput,
   deleteCategoryInput,
   overrideMerchantInput,
   overrideTransactionInput,
   proposeCategoryChangeInput,
   renameCategoryInput,
+  updateCategoryDescriptionInput,
+  resetCategoryDescriptionInput,
 } from './categorization.schemas';
 
 @Controller('categorization')
@@ -35,6 +45,8 @@ export class CategorizationController {
     private readonly del: DeleteCategory,
     private readonly list: ListCategories,
     private readonly propose: ProposeCategoryChange,
+    private readonly updateDesc: UpdateCategoryDescription,
+    private readonly resetDesc: ResetCategoryDescription,
   ) {}
 
   @Post('merchant')
@@ -74,5 +86,19 @@ export class CategorizationController {
     @Body(new ZodValidationPipe(proposeCategoryChangeInput)) body: ProposeCategoryChangeInput,
   ) {
     return this.propose.execute(body);
+  }
+
+  @Post('update-description')
+  updateDescription(
+    @Body(new ZodValidationPipe(updateCategoryDescriptionInput)) body: UpdateCategoryDescriptionInput,
+  ) {
+    return this.updateDesc.execute(body);
+  }
+
+  @Post('reset-description')
+  resetDescription(
+    @Body(new ZodValidationPipe(resetCategoryDescriptionInput)) body: ResetCategoryDescriptionInput,
+  ) {
+    return this.resetDesc.execute(body);
   }
 }
