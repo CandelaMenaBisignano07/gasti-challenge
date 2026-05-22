@@ -18,6 +18,8 @@ import { isAcceptedOperationType } from '../domain/operation-type';
 import { ProcessMpEvent } from './process-mp-event.use-case';
 import { RefreshMpToken } from './refresh-mp-token.use-case';
 
+// Tighter than `isMpTokenExpired`'s default 5 min: the poller runs frequently,
+// so we only need enough headroom to outlast a single in-flight search call.
 const TOKEN_REFRESH_SKEW_MS = 2 * 60_000;
 
 export interface PollMpPaymentsInput {
@@ -57,6 +59,9 @@ export class PollMpPayments {
       await this.refreshToken.execute(user); // mutates tokens via users.updateMpTokens
       user = await this.users.getById(userId); // re-fetch the now-updated user
     }
+    // After the connected-check and the optional refresh, the token is guaranteed
+    // non-null. Pull it into a local so the call site doesn't need a `!` assertion.
+    const accessToken = user.mpAccessToken as string;
 
     const end = this.clock.now();
     const cursor: MpPollCursor =
@@ -64,7 +69,7 @@ export class PollMpPayments {
     const begin = pollWindowBegin(cursor);
 
     const { results } = await this.gateway.search({
-      accessToken: user.mpAccessToken!,
+      accessToken,
       beginDate: begin,
       endDate: end,
     });

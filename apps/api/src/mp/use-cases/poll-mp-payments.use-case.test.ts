@@ -45,76 +45,146 @@ function payment(overrides: Partial<MpPayment>): MpPayment {
   };
 }
 
+interface BuildOptions {
+  user?: User | User[]; // single user, or sequence returned by repeated getById calls
+  cursor?: MpPollCursor | null;
+  searchResult?: MpPaymentsSearchResult;
+  processImpl?: (input: ProcessMpEventInput) => Promise<void>;
+  refreshImpl?: (user: User) => Promise<string>;
+  clockNow?: Date;
+}
+
+function build(opts: BuildOptions = {}) {
+  const userSequence = Array.isArray(opts.user) ? opts.user : [opts.user ?? baseUser];
+  let userCall = 0;
+  const getById = mock(async (_userId: string) => {
+    const u = userSequence[Math.min(userCall, userSequence.length - 1)];
+    userCall += 1;
+    return u;
+  });
+  const users = { getById } as unknown as UsersRepository;
+
+  const cursorGet = mock(
+    async (_userId: string): Promise<MpPollCursor | null> => opts.cursor ?? null,
+  );
+  const cursorUpsert = mock(async (_cursor: MpPollCursor) => {});
+  const cursors = {
+    getByUserId: cursorGet,
+    upsert: cursorUpsert,
+  } satisfies MpPollCursorsRepository;
+
+  const searchResult: MpPaymentsSearchResult = opts.searchResult ?? {
+    results: [],
+    truncated: false,
+    totalReported: 0,
+  };
+  const search = mock(async () => searchResult);
+  const gateway = { search } as unknown as MpPaymentsSearchGateway;
+
+  const processExecute = mock(opts.processImpl ?? (async (_input: ProcessMpEventInput) => {}));
+  const processEvent = { execute: processExecute } as unknown as ProcessMpEvent;
+
+  const refreshExecute = mock(opts.refreshImpl ?? (async (_user: User) => 'tok'));
+  const refreshToken = { execute: refreshExecute } as unknown as RefreshMpToken;
+
+  const now = opts.clockNow ?? new Date('2026-05-22T18:30:00.000Z');
+  const clock: Clock = { now: () => now };
+
+  const uc = new PollMpPayments(users, cursors, gateway, processEvent, refreshToken, clock);
+
+  return {
+    uc,
+    mocks: { getById, cursorGet, cursorUpsert, search, processExecute, refreshExecute },
+  };
+}
+
 describe('PollMpPayments — happy path', () => {
   test('filters account_fund, processes the rest, advances cursor to clock.now()', async () => {
-    const now = new Date('2026-05-22T18:30:00.000Z');
-
-    // Users repo: getById returns the connected user.
-    const getById = mock(async (_userId: string) => baseUser);
-    const users = { getById } as Pick<UsersRepository, 'getById'> as UsersRepository;
-
-    // Cursors repo: no prior cursor; capture the upsert payload.
-    const cursorGet = mock(async (_userId: string): Promise<MpPollCursor | null> => null);
-    const cursorUpsert = mock(async (_cursor: MpPollCursor) => {});
-    const cursors = {
-      getByUserId: cursorGet,
-      upsert: cursorUpsert,
-    } satisfies MpPollCursorsRepository;
-
-    // Gateway: 3 payments, the middle one is account_fund.
     const results: MpPayment[] = [
       payment({ id: 1, operation_type: 'regular_payment' }),
       payment({ id: 2, operation_type: 'account_fund' }),
       payment({ id: 3, operation_type: 'money_transfer' }),
     ];
-    const searchResult: MpPaymentsSearchResult = {
-      results,
-      truncated: false,
-      totalReported: 3,
-    };
-    const search = mock(async () => searchResult);
-    const gateway = { search } as MpPaymentsSearchGateway;
+    const { uc, mocks } = build({
+      searchResult: { results, truncated: false, totalReported: 3 },
+    });
 
-    // ProcessMpEvent: capture each call.
-    const processExecute = mock(async (_input: ProcessMpEventInput) => {});
-    const processEvent = {
-      execute: processExecute,
-    } as Pick<ProcessMpEvent, 'execute'> as ProcessMpEvent;
-
-    // RefreshMpToken: not exercised in the happy path (token not expired).
-    const refreshExecute = mock(async (_user: User) => 'tok');
-    const refreshToken = {
-      execute: refreshExecute,
-    } as Pick<RefreshMpToken, 'execute'> as RefreshMpToken;
-
-    // Clock: fixed at the assertion's expected ISO.
-    const clock: Clock = { now: () => now };
-
-    const useCase = new PollMpPayments(
-      users,
-      cursors,
-      gateway,
-      processEvent,
-      refreshToken,
-      clock,
-    );
-
-    await useCase.execute({ userId: 'u1' });
+    await uc.execute({ userId: 'u1' });
 
     // processEvent.execute called exactly twice (account_fund filtered out).
-    expect(processExecute.mock.calls).toHaveLength(2);
-    expect(processExecute.mock.calls[0][0].payment.id).toBe(1);
-    expect(processExecute.mock.calls[0][0].user).toBe(baseUser);
-    expect(processExecute.mock.calls[1][0].payment.id).toBe(3);
-    expect(processExecute.mock.calls[1][0].user).toBe(baseUser);
+    expect(mocks.processExecute.mock.calls).toHaveLength(2);
+    expect(mocks.processExecute.mock.calls[0][0].payment.id).toBe(1);
+    expect(mocks.processExecute.mock.calls[0][0].user).toBe(baseUser);
+    expect(mocks.processExecute.mock.calls[1][0].payment.id).toBe(3);
+    expect(mocks.processExecute.mock.calls[1][0].user).toBe(baseUser);
 
     // cursors.upsert called once with lastPolledAt === clock.now().
-    expect(cursorUpsert.mock.calls).toHaveLength(1);
-    const upserted = cursorUpsert.mock.calls[0][0];
+    expect(mocks.cursorUpsert.mock.calls).toHaveLength(1);
+    const upserted = mocks.cursorUpsert.mock.calls[0][0];
     expect(upserted.userId).toBe('u1');
     expect(upserted.lastPolledAt.toISOString()).toBe('2026-05-22T18:30:00.000Z');
 
     // Refresh path NOT exercised here (token expires in 2030).
-    expect(refreshExecute.mock.calls).toHaveLength(0);
+    expect(mocks.refreshExecute.mock.calls).toHaveLength(0);
+  });
+});
+
+describe('PollMpPayments — edge cases', () => {
+  test('cursor does NOT advance when processEvent.execute throws', async () => {
+    const boom = new Error('classifier exploded');
+    const { uc, mocks } = build({
+      searchResult: {
+        results: [payment({ id: 7, operation_type: 'regular_payment' })],
+        truncated: false,
+        totalReported: 1,
+      },
+      processImpl: async () => {
+        throw boom;
+      },
+    });
+
+    await expect(uc.execute({ userId: 'u1' })).rejects.toBe(boom);
+
+    // Cursor untouched — next poll must retry the same window.
+    expect(mocks.cursorUpsert.mock.calls).toHaveLength(0);
+  });
+
+  test('skips entirely when user is not MP-connected', async () => {
+    const disconnected: User = { ...baseUser, mpUserId: null, mpAccessToken: null };
+    const { uc, mocks } = build({ user: disconnected });
+
+    await uc.execute({ userId: 'u1' });
+
+    expect(mocks.search.mock.calls).toHaveLength(0);
+    expect(mocks.cursorUpsert.mock.calls).toHaveLength(0);
+    expect(mocks.processExecute.mock.calls).toHaveLength(0);
+    expect(mocks.refreshExecute.mock.calls).toHaveLength(0);
+  });
+
+  test('refreshes token first, re-fetches user, and calls gateway with the NEW token', async () => {
+    const aboutToExpire: User = {
+      ...baseUser,
+      mpAccessToken: 'stale-tok',
+      mpTokenExpiresAt: new Date(Date.now() + 60_000), // 1 min — inside the 2-min skew
+    };
+    const refreshed: User = {
+      ...baseUser,
+      mpAccessToken: 'new-tok',
+      mpTokenExpiresAt: new Date(Date.now() + 6 * 3600_000), // 6h out
+    };
+
+    const { uc, mocks } = build({
+      user: [aboutToExpire, refreshed], // 1st getById → about-to-expire, 2nd → refreshed
+    });
+
+    await uc.execute({ userId: 'u1' });
+
+    // refreshToken.execute called exactly once with the about-to-expire user.
+    expect(mocks.refreshExecute.mock.calls).toHaveLength(1);
+    expect(mocks.refreshExecute.mock.calls[0][0]).toBe(aboutToExpire);
+
+    // Gateway received the rotated token, NOT the stale one.
+    expect(mocks.search.mock.calls).toHaveLength(1);
+    expect(mocks.search.mock.calls[0][0].accessToken).toBe('new-tok');
   });
 });
