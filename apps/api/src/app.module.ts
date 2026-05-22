@@ -1,4 +1,5 @@
 import { Module } from '@nestjs/common';
+import { ScheduleModule } from '@nestjs/schedule';
 import { AppController } from './app.controller';
 import { SharedModule } from './shared/shared.module';
 import { TransactionsModule } from './transactions/transactions.module';
@@ -14,6 +15,7 @@ import { ProactiveModule } from './proactive/proactive.module';
 
 @Module({
   imports: [
+    ScheduleModule.forRoot(),
     SharedModule,
     TransactionsModule,
     CategorizationModule,
