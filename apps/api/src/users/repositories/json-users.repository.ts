@@ -88,6 +88,11 @@ export class JsonUsersRepository implements UsersRepository {
     return row ? this.toUser(row) : null;
   }
 
+  async listMpConnected(): Promise<User[]> {
+    const rows = await this.store.read();
+    return rows.filter((r) => r.mpUserId != null).map((r) => this.toUser(r));
+  }
+
   async linkMpAccount(userId: string, mp: MpLinkFields): Promise<void> {
     await this.mutate(userId, (r) => ({
       ...r,

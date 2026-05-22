@@ -13,6 +13,7 @@ export interface UsersRepository {
   getCurrent(): Promise<User>;
   getById(userId: string): Promise<User>;
   findByMpUserId(mpUserId: string): Promise<User | null>;
+  listMpConnected(): Promise<User[]>;
   linkMpAccount(userId: string, mp: MpLinkFields): Promise<void>;
   updateMpTokens(userId: string, fields: MpTokenFields): Promise<void>;
   unlinkMpAccount(userId: string): Promise<void>;
