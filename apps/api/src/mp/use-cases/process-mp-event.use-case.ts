@@ -18,6 +18,7 @@ import type { NewPendingPrompt } from '../../proactive/domain/pending-prompts.re
 import { PAYMENT_CLASSIFIER, type PaymentClassifier } from '../domain/payment-classifier';
 import { isCompletedPayment } from '../domain/is-completed-payment';
 import { mapMpStatusToTransactionStatus } from '../domain/map-mp-status';
+import { normalizeOperationType } from '../domain/operation-type';
 import type { MpPayment } from '../domain/mp-payment';
 import {
   merchantOf,
@@ -161,6 +162,7 @@ export class ProcessMpEvent {
       paymentDate,
       suggestedCategory: args.suggestedCategory,
       suggestedDescription: args.suggestedDescription,
+      operationType: normalizeOperationType(args.payment.operation_type),
       confidence: args.confidence,
       intent: args.intent,
       noticeReason: args.noticeReason,

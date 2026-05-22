@@ -8,9 +8,25 @@ import type {
   PendingPromptsRepository,
 } from '../domain/pending-prompts.repository';
 
+/**
+ * Persisted row shape — same as `PendingPrompt`, except `operationType` is
+ * optional because rows written before T19 don't have it on disk.
+ */
+type Row = Omit<PendingPrompt, 'operationType'> & {
+  operationType?: PendingPrompt['operationType'];
+};
+
+/** Default to `regular_payment` for legacy rows missing the field. */
+function toEntity(row: Row): PendingPrompt {
+  return {
+    ...row,
+    operationType: row.operationType ?? 'regular_payment',
+  };
+}
+
 @Injectable()
 export class JsonPendingPromptsRepository implements PendingPromptsRepository {
-  private readonly store: JsonStore<PendingPrompt[]> = createJsonStore<PendingPrompt[]>(
+  private readonly store: JsonStore<Row[]> = createJsonStore<Row[]>(
     pendingPromptsFile(),
     [],
   );
@@ -30,19 +46,22 @@ export class JsonPendingPromptsRepository implements PendingPromptsRepository {
 
   async findByMpPaymentId(userId: string, mpPaymentId: string): Promise<PendingPrompt | null> {
     const all = await this.store.read();
-    return all.find((p) => p.userId === userId && p.mpPaymentId === mpPaymentId) ?? null;
+    const row = all.find((p) => p.userId === userId && p.mpPaymentId === mpPaymentId);
+    return row ? toEntity(row) : null;
   }
 
   async listPending(userId: string): Promise<PendingPrompt[]> {
     const all = await this.store.read();
     return all
       .filter((p) => p.userId === userId && (p.status === 'pending' || p.status === 'auto'))
-      .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+      .sort((a, b) => b.createdAt.localeCompare(a.createdAt))
+      .map(toEntity);
   }
 
   async getById(userId: string, id: string): Promise<PendingPrompt | null> {
     const all = await this.store.read();
-    return all.find((p) => p.userId === userId && p.id === id) ?? null;
+    const row = all.find((p) => p.userId === userId && p.id === id);
+    return row ? toEntity(row) : null;
   }
 
   private async patch(id: string, fields: Partial<PendingPrompt>): Promise<void> {

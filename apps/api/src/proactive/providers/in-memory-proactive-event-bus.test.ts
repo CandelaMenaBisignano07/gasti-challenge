@@ -14,6 +14,7 @@ function makePrompt(id: string): PendingPrompt {
     paymentDate: '2026-05-18T00:00:00.000Z',
     suggestedCategory: 'comida',
     suggestedDescription: 'Pedido',
+    operationType: 'regular_payment',
     confidence: 0.8,
     intent: 'confirm',
     noticeReason: null,

@@ -15,6 +15,7 @@ export interface PendingPrompt {
   readonly paymentDate: string; // ISO
   readonly suggestedCategory: Category;
   readonly suggestedDescription: string;
+  readonly operationType: 'regular_payment' | 'money_transfer' | 'recurring_payment';
   readonly confidence: number;
   readonly intent: ProactiveIntent;
   readonly noticeReason: NoticeReason | null;

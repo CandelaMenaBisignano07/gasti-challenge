@@ -15,10 +15,9 @@ afterAll(() => {
   if (existsSync(TMP)) rmSync(TMP);
 });
 
-/** A NewPendingPrompt for `default-user`; `id` is a placeholder — create() assigns the real id. */
+/** A NewPendingPrompt for `default-user`. */
 function base(over: Partial<NewPendingPrompt> = {}): NewPendingPrompt {
   return {
-    id: 'placeholder',
     userId: 'default-user',
     mpPaymentId: 'PAY',
     kind: 'expense',
@@ -27,6 +26,7 @@ function base(over: Partial<NewPendingPrompt> = {}): NewPendingPrompt {
     paymentDate: '2026-05-18T00:00:00.000Z',
     suggestedCategory: 'comida',
     suggestedDescription: 'Pedido',
+    operationType: 'regular_payment',
     confidence: 0.8,
     intent: 'confirm',
     noticeReason: null,
@@ -85,4 +85,40 @@ test('findByMpPaymentId matches on user + payment id', async () => {
   expect((await repo.findByMpPaymentId('default-user', 'PAY-42'))?.mpPaymentId).toBe('PAY-42');
   expect(await repo.findByMpPaymentId('default-user', 'PAY-99')).toBeNull();
   expect(await repo.findByMpPaymentId('other-user', 'PAY-42')).toBeNull();
+});
+
+test('legacy row missing operationType defaults to regular_payment', async () => {
+  // Simulate a row persisted before T19 — no `operationType` field on disk.
+  const legacyRow = {
+    id: 'pp_legacy_1',
+    userId: 'default-user',
+    mpPaymentId: 'PAY-LEGACY',
+    kind: 'expense',
+    amount: 1000,
+    merchant: 'Rappi',
+    paymentDate: '2026-05-18T00:00:00.000Z',
+    suggestedCategory: 'comida',
+    suggestedDescription: 'Pedido',
+    confidence: 0.8,
+    intent: 'confirm',
+    noticeReason: null,
+    status: 'pending',
+    resolvedTransactionId: null,
+    createdAt: '2026-05-18T00:00:00.000Z',
+    resolvedAt: null,
+  };
+  writeFileSync(TMP, JSON.stringify([legacyRow]), 'utf-8');
+
+  const { JsonPendingPromptsRepository } = await import('./json-pending-prompts.repository');
+  const repo = new JsonPendingPromptsRepository();
+
+  const byId = await repo.getById('default-user', 'pp_legacy_1');
+  expect(byId?.operationType).toBe('regular_payment');
+
+  const byPayment = await repo.findByMpPaymentId('default-user', 'PAY-LEGACY');
+  expect(byPayment?.operationType).toBe('regular_payment');
+
+  const listed = await repo.listPending('default-user');
+  expect(listed).toHaveLength(1);
+  expect(listed[0].operationType).toBe('regular_payment');
 });

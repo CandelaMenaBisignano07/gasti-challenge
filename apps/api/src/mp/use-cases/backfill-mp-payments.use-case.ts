@@ -36,6 +36,7 @@ import {
 } from '../domain/backfill-scope';
 import {
   isAcceptedOperationType,
+  normalizeOperationType,
   type OperationType,
 } from '../domain/operation-type';
 import type { MpPayment } from '../domain/mp-payment';
@@ -189,15 +190,6 @@ export class BackfillMpPayments {
 
     return summary;
   }
-}
-
-/** Coerces unknown/missing operation types to `regular_payment` — the most
- * common — so the breakdown always lines up against the canonical four. */
-function normalizeOperationType(
-  value: OperationType | null | undefined,
-): Exclude<OperationType, 'account_fund'> {
-  if (value === 'money_transfer' || value === 'recurring_payment') return value;
-  return 'regular_payment';
 }
 
 /** Picks a YYYY-MM-DD date string from the payment, falling back to `end`. */

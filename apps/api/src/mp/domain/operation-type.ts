@@ -29,3 +29,18 @@ export const ACCEPTED_OPERATION_TYPES: ReadonlySet<OperationType> = new Set([
 export function isAcceptedOperationType(value: string | null | undefined): boolean {
   return value !== 'account_fund';
 }
+
+/**
+ * Coerces unknown / missing / `account_fund` values to `regular_payment` — the
+ * most common — so downstream code (transactions, breakdowns, prompt copy) can
+ * trust the value belongs to the canonical three-element user-facing set.
+ *
+ * `account_fund` is normally filtered upstream by `isAcceptedOperationType`,
+ * but coercing here keeps the function total in case a caller forgets.
+ */
+export function normalizeOperationType(
+  value: string | null | undefined,
+): Exclude<OperationType, 'account_fund'> {
+  if (value === 'money_transfer' || value === 'recurring_payment') return value;
+  return 'regular_payment';
+}

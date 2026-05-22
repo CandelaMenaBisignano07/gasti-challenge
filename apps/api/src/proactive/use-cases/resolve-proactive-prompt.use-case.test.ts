@@ -56,6 +56,7 @@ function makePrompt(overrides: Partial<PendingPrompt> = {}): PendingPrompt {
     paymentDate: '2026-05-14T10:00:00.000Z',
     suggestedCategory: 'comida',
     suggestedDescription: 'Pedido Rappi',
+    operationType: 'regular_payment',
     confidence: 0.9,
     intent: 'confirm',
     noticeReason: null,

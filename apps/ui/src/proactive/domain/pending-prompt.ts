@@ -13,6 +13,7 @@ export type PendingPrompt = {
   paymentDate: string;
   suggestedCategory: string;
   suggestedDescription: string;
+  operationType: 'regular_payment' | 'money_transfer' | 'recurring_payment';
   confidence: number;
   intent: PendingPromptIntent;
   noticeReason: PendingPromptNoticeReason | null;

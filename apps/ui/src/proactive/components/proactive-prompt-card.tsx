@@ -7,6 +7,7 @@ import { Num } from '@/shared/ui/num';
 import { OptionPillStack } from '@/shared/ui/option-pill-stack';
 import { useProactive } from '@/proactive/infrastructure/use-proactive';
 import { formatPromptDate } from '@/proactive/providers/format-prompt-date';
+import { pickLeadCopy } from '@/proactive/providers/pick-lead-copy';
 import { PromptEditor } from '@/proactive/components/prompt-editor';
 import type { PendingPrompt } from '@/proactive/domain/pending-prompt';
 
@@ -25,8 +26,10 @@ export function ProactivePromptCard({ prompt }: ProactivePromptCardProps) {
 
   const counterpart = prompt.merchant ?? prompt.suggestedDescription;
   const date = formatPromptDate(prompt.paymentDate);
-  const verb = prompt.kind === 'income' ? 'un cobro' : 'un pago';
-  const direction = prompt.kind === 'income' ? 'de' : 'a';
+  const { lead, relator } = pickLeadCopy({
+    operationType: prompt.operationType,
+    direction: prompt.kind,
+  });
   const resolved = prompt.status !== 'pending';
 
   const run = (action: () => Promise<unknown>) => {
@@ -47,7 +50,7 @@ export function ProactivePromptCard({ prompt }: ProactivePromptCardProps) {
         <Eyebrow tone="ai">Gasti</Eyebrow>
 
         <p className="font-display text-[17px] leading-[1.5] text-ink-1">
-          Vi {verb} de <Num value={prompt.amount} size="sm" /> {direction} {counterpart} del{' '}
+          {lead} <Num value={prompt.amount} size="sm" /> {relator} {counterpart} del{' '}
           {date}. Categoría sugerida: {prompt.suggestedCategory}.
         </p>
 
