@@ -29,7 +29,10 @@ import { CategoryDescriptionResolver } from '../shared/providers/category-descri
     ResetCategoryDescription,
     ProposeCategoryChange,
     CategoryDescriptionResolver,
-    { provide: DEFAULT_CATEGORY_OVERRIDES_REPOSITORY, useClass: JsonDefaultCategoryOverridesRepository },
+    {
+      provide: DEFAULT_CATEGORY_OVERRIDES_REPOSITORY,
+      useFactory: () => new JsonDefaultCategoryOverridesRepository(),
+    },
   ],
   exports: [CategoryDescriptionResolver, DEFAULT_CATEGORY_OVERRIDES_REPOSITORY],
 })
