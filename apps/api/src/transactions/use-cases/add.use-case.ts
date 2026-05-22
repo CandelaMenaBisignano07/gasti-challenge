@@ -6,6 +6,10 @@ import { DomainError } from '../../shared/domain/domain-error';
 import { formatIso } from '../../shared/domain/dates';
 import type { Category } from '../../shared/domain/category';
 import type { Transaction } from '../../shared/domain/transaction';
+import {
+  TRANSACTION_CLASSIFIER,
+  type TransactionClassifier,
+} from '../../categorization/domain/transaction-classifier';
 import { TRANSACTIONS_REPOSITORY, type TransactionsRepository } from '../domain/transactions.repository';
 
 export interface AddTransactionInput {
@@ -23,14 +27,39 @@ export class AddTransaction {
     private readonly categories: CategoryResolver,
     @Inject(CLOCK) private readonly clock: Clock,
     private readonly registry: CategoryRegistry,
+    @Inject(TRANSACTION_CLASSIFIER) private readonly classifier: TransactionClassifier,
   ) {}
 
   async execute(input: AddTransactionInput): Promise<{ transaction: Transaction }> {
     if (input.category && !(await this.registry.exists(input.category))) {
       throw new DomainError('VALIDATION_ERROR', `"${input.category}" no es una categoría válida.`);
     }
-    const category =
-      input.category ?? (await this.categories.categoryForMerchant(input.merchant)) ?? 'otros';
+
+    let category: Category;
+    let classificationConfidence: number | undefined;
+    let classificationSource: Transaction['classificationSource'];
+
+    if (input.category) {
+      category = input.category;
+      classificationSource = 'manual';
+    } else {
+      const override = await this.categories.categoryForMerchant(input.merchant);
+      if (override) {
+        category = override;
+        classificationSource = 'override';
+      } else {
+        const result = await this.classifier.classify({
+          merchant: input.merchant,
+          description: input.description,
+          amount: input.amount,
+          direction: 'expense',
+        });
+        category = result.category;
+        classificationConfidence = result.confidence;
+        classificationSource = result.confidence > 0 ? 'classifier' : 'fallback';
+      }
+    }
+
     const tx: Transaction = {
       id: await this.repo.nextId(),
       date: input.date ?? formatIso(this.clock.now()),
@@ -39,6 +68,8 @@ export class AddTransaction {
       category,
       description: input.description,
       merchant: input.merchant,
+      classificationSource,
+      ...(classificationConfidence !== undefined ? { classificationConfidence } : {}),
     };
     await this.repo.add(tx);
     return { transaction: tx };

@@ -15,6 +15,11 @@ import type {
   DefaultCategoryOverrides,
   DefaultCategoryOverridesRepository,
 } from '../domain/default-category-overrides';
+import type {
+  ClassifyArgs,
+  Classification,
+  TransactionClassifier,
+} from '../../categorization/domain/transaction-classifier';
 
 export function fixedClock(iso: string): Clock {
   return { now: () => new Date(`${iso}T12:00:00.000Z`) };
@@ -129,6 +134,12 @@ export function fakeCategoriesRepo(
       data = data.map((c) => (c.name === name ? { name: c.name, description } : c));
     },
   };
+}
+
+export function fakeTransactionClassifier(
+  respond: (args: ClassifyArgs) => Classification = () => ({ category: 'otros', confidence: 0 }),
+): TransactionClassifier {
+  return { classify: async (args) => respond(args) };
 }
 
 export function fakeDefaultCategoryOverridesRepo(
