@@ -51,16 +51,16 @@ export class MpOAuthController {
     const expected = (req.cookies as Record<string, string> | undefined)?.[STATE_COOKIE];
     res.clearCookie(STATE_COOKIE, { path: '/mp/oauth' });
     if (!code || !safeEqual(state, expected)) {
-      res.redirect(`${UI_URL}/?mp=error`);
+      res.redirect(`${UI_URL}/mp/callback?error=1`);
       return;
     }
     try {
       await this.complete.execute(code);
-      res.redirect(`${UI_URL}/?mp=connected`);
+      res.redirect(`${UI_URL}/mp/callback`);
     } catch {
       // Code exchange failed (rejected/expired code, MP error, network) — keep
       // the user inside the OAuth UX contract instead of dumping a raw 500.
-      res.redirect(`${UI_URL}/?mp=error`);
+      res.redirect(`${UI_URL}/mp/callback?error=1`);
     }
   }
 

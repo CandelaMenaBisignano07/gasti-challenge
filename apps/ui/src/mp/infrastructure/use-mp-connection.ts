@@ -1,7 +1,11 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import type { MpConnection } from '@/mp/domain/mp-connection';
+import type {
+  BackfillRunSummary,
+  BackfillScope,
+  MpConnection,
+} from '@/mp/domain/mp-connection';
 import { HttpMpRepository } from '@/mp/repositories/http-mp-repository';
 
 type UseMpConnection = {
@@ -9,12 +13,19 @@ type UseMpConnection = {
   loading: boolean;
   connect: () => void;
   disconnect: () => Promise<void>;
+  refresh: () => Promise<void>;
+  triggerBackfill: (scope: BackfillScope) => Promise<BackfillRunSummary>;
+  pendingBackfillOffer: boolean;
+  clearBackfillOffer: () => void;
 };
 
 export function useMpConnection(): UseMpConnection {
   const repo = useMemo(() => new HttpMpRepository(), []);
   const [connection, setConnection] = useState<MpConnection>({ connected: false });
   const [loading, setLoading] = useState(true);
+  // The offer is surfaced by a later task that reads a URL query param; T21 only
+  // installs the state so consumers can wire up to it. Defaults to false.
+  const [pendingBackfillOffer, setPendingBackfillOffer] = useState(false);
 
   const refresh = useCallback(async () => {
     setLoading(true);
@@ -24,7 +35,7 @@ export function useMpConnection(): UseMpConnection {
   }, [repo]);
 
   useEffect(() => {
-    // Re-read status on mount; also covers the OAuth callback redirect (?mp=connected).
+    // Re-read status on mount; also covers the OAuth callback redirect (/mp/callback).
     void refresh();
   }, [refresh]);
 
@@ -37,5 +48,21 @@ export function useMpConnection(): UseMpConnection {
     await refresh();
   }, [repo, refresh]);
 
-  return { connection, loading, connect, disconnect };
+  const triggerBackfill = useCallback(
+    (scope: BackfillScope) => repo.triggerBackfill(scope),
+    [repo],
+  );
+
+  const clearBackfillOffer = useCallback(() => setPendingBackfillOffer(false), []);
+
+  return {
+    connection,
+    loading,
+    connect,
+    disconnect,
+    refresh,
+    triggerBackfill,
+    pendingBackfillOffer,
+    clearBackfillOffer,
+  };
 }
