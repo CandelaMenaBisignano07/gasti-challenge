@@ -17,6 +17,8 @@ import type {
 import type { Transaction } from '../../shared/domain/transaction';
 import type { BackfillSummariesRepository } from '../../proactive/domain/backfill-summaries.repository';
 import type { BackfillSummary } from '../../proactive/domain/backfill-summary';
+import type { PendingPromptsRepository } from '../../proactive/domain/pending-prompts.repository';
+import type { PendingPrompt } from '../../proactive/domain/pending-prompt';
 import type { Clock } from '../../shared/providers/clock';
 import type { RefreshMpToken } from './refresh-mp-token.use-case';
 
@@ -120,6 +122,10 @@ describe('BackfillMpPayments — happy path', () => {
       create: summariesCreate,
     } as unknown as BackfillSummariesRepository;
 
+    const prompts = {
+      findByMpPaymentId: mock(async () => null),
+    } as unknown as PendingPromptsRepository;
+
     const cursorUpsert = mock(async () => {});
     const cursors = {
       getByUserId: mock(async () => null),
@@ -142,6 +148,7 @@ describe('BackfillMpPayments — happy path', () => {
       batchClassifier,
       transactions,
       summaries,
+      prompts,
       refresh,
       clock,
     );
@@ -283,6 +290,10 @@ describe('BackfillMpPayments — happy path', () => {
       create: summariesCreate,
     } as unknown as BackfillSummariesRepository;
 
+    const prompts = {
+      findByMpPaymentId: mock(async () => null),
+    } as unknown as PendingPromptsRepository;
+
     const cursorUpsert = mock(async () => {});
     const cursors = {
       getByUserId: mock(async () => null),
@@ -305,6 +316,7 @@ describe('BackfillMpPayments — happy path', () => {
       batchClassifier,
       transactions,
       summaries,
+      prompts,
       refresh,
       clock,
     );
@@ -321,5 +333,143 @@ describe('BackfillMpPayments — happy path', () => {
 
     // lowConfidenceCount reflects only the new payments' classifications.
     expect(result.lowConfidenceCount).toBe(1);
+  });
+
+  test('skips payments that already have a pending prompt', async () => {
+    // Two accepted payments. Neither is yet a transaction, but payment 1
+    // already has a `pending` prompt queued by the cron poller — the
+    // backfill must NOT re-import it. Only payment 2 is truly fresh.
+    const payments: MpPayment[] = [
+      payment({ id: 1, operation_type: 'regular_payment', transaction_amount: 250 }),
+      payment({ id: 2, operation_type: 'regular_payment', transaction_amount: 500 }),
+    ];
+
+    const searchResult: MpPaymentsSearchResult = {
+      results: payments,
+      truncated: false,
+      totalReported: 2,
+    };
+    const search = mock(async () => searchResult);
+    const gateway = { search } as unknown as MpPaymentsSearchGateway;
+
+    // Only payment 2 reaches classification.
+    const classifications: Classification[] = [
+      { category: 'comida', suggestedDescription: 'Lunch', confidence: 0.9 },
+    ];
+    const classifyBatch = mock(async () => classifications);
+    const batchClassifier = { classifyBatch } as unknown as BatchClassifier;
+
+    const create = mock(async (input: CreateTransactionInput): Promise<Transaction> => ({
+      id: `txn_${input.mpPaymentId ?? 'x'}`,
+      date: input.date,
+      amount: input.amount,
+      currency: 'ARS',
+      category: input.category,
+      description: input.description,
+      merchant: input.merchant,
+      userId: input.userId,
+      direction: input.direction,
+      status: input.status ?? 'active',
+      statusChangedAt: null,
+      source: input.source,
+      mpPaymentId: input.mpPaymentId ?? null,
+      needsReview: input.needsReview ?? false,
+      operationType: input.operationType ?? null,
+    }));
+    // No pre-existing transactions.
+    const findByMpPaymentId = mock(async () => null);
+    const transactions = {
+      create,
+      findByMpPaymentId,
+    } as unknown as TransactionsRepository;
+
+    // Payment 1 has a pending prompt; payment 2 does not.
+    const pendingPrompt: PendingPrompt = {
+      id: 'pp1',
+      userId: 'u1',
+      mpPaymentId: '1',
+      kind: 'expense',
+      amount: 250,
+      merchant: 'Test Merchant',
+      paymentDate: '2026-05-21T18:25:00.000Z',
+      suggestedCategory: 'comida',
+      suggestedDescription: 'Lunch',
+      operationType: 'regular_payment',
+      confidence: 0.9,
+      intent: 'confirm',
+      noticeReason: null,
+      status: 'pending',
+      resolvedTransactionId: null,
+      createdAt: '2026-05-22T00:01:00.000Z',
+      resolvedAt: null,
+    };
+    const promptsFind = mock(async (_userId: string, mpPaymentId: string) =>
+      mpPaymentId === '1' ? pendingPrompt : null,
+    );
+    const prompts = {
+      findByMpPaymentId: promptsFind,
+    } as unknown as PendingPromptsRepository;
+
+    const createdSummary: BackfillSummary = {
+      id: 'sum1',
+      userId: 'u1',
+      scope: '7d',
+      rangeBegin: new Date('2026-05-15T00:00:00.000Z'),
+      rangeEnd: new Date('2026-05-22T00:00:00.000Z'),
+      totalImported: 1,
+      byOperationType: {
+        regular_payment: 1,
+        money_transfer: 0,
+        recurring_payment: 0,
+        account_fund: 0,
+      },
+      lowConfidenceCount: 0,
+      truncated: false,
+      status: 'visible',
+      createdAt: new Date('2026-05-22T00:00:00.000Z'),
+    };
+    const summariesCreate = mock(async () => createdSummary);
+    const summaries = {
+      create: summariesCreate,
+    } as unknown as BackfillSummariesRepository;
+
+    const cursorUpsert = mock(async () => {});
+    const cursors = {
+      getByUserId: mock(async () => null),
+      upsert: cursorUpsert,
+    } satisfies MpPollCursorsRepository;
+
+    const getById = mock(async () => user);
+    const users = { getById } as unknown as UsersRepository;
+
+    const refreshExecute = mock(async () => 'tok');
+    const refresh = { execute: refreshExecute } as unknown as RefreshMpToken;
+
+    const now = new Date('2026-05-22T00:00:00.000Z');
+    const clock: Clock = { now: () => now };
+
+    const uc = new BackfillMpPayments(
+      users,
+      cursors,
+      gateway,
+      batchClassifier,
+      transactions,
+      summaries,
+      prompts,
+      refresh,
+      clock,
+    );
+
+    const result = await uc.execute({ userId: 'u1', scope: '7d' });
+
+    // Only payment 2 is imported; payment 1 is left for the user to
+    // resolve via the existing pending prompt.
+    expect(create.mock.calls).toHaveLength(1);
+    expect(result.totalImported).toBe(1);
+
+    // Only the truly fresh payment reached classifyBatch.
+    expect(classifyBatch.mock.calls).toHaveLength(1);
+    expect(classifyBatch.mock.calls[0][0].payments).toHaveLength(1);
+    expect(classifyBatch.mock.calls[0][0].payments[0].id).toBe(2);
   });
 });

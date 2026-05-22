@@ -15,6 +15,10 @@ import {
 } from '../../proactive/domain/backfill-summaries.repository';
 import type { BackfillSummary } from '../../proactive/domain/backfill-summary';
 import {
+  PENDING_PROMPTS_REPOSITORY,
+  type PendingPromptsRepository,
+} from '../../proactive/domain/pending-prompts.repository';
+import {
   MP_PAYMENTS_SEARCH_GATEWAY,
   type MpPaymentsSearchGateway,
 } from '../domain/mp-payments-search.gateway';
@@ -77,6 +81,8 @@ export class BackfillMpPayments {
     private readonly transactions: TransactionsRepository,
     @Inject(BACKFILL_SUMMARIES_REPOSITORY)
     private readonly summaries: BackfillSummariesRepository,
+    @Inject(PENDING_PROMPTS_REPOSITORY)
+    private readonly prompts: PendingPromptsRepository,
     private readonly refreshToken: RefreshMpToken,
     @Inject(CLOCK) private readonly clock: Clock,
   ) {}
@@ -115,6 +121,19 @@ export class BackfillMpPayments {
       if (!found) fresh.push(p);
     }
 
+    // Also dedupe against pending prompts — if the cron poller already
+    // queued a payment for user review (status='pending'), the backfill
+    // must NOT import it as a transaction. Otherwise, accepting the prompt
+    // afterwards would create a duplicate. Respect the user's active
+    // decision queue and let them complete that path.
+    const trulyFresh: MpPayment[] = [];
+    for (const p of fresh) {
+      const existingPrompt = await this.prompts.findByMpPaymentId(user.id, String(p.id));
+      if (!existingPrompt || existingPrompt.status !== 'pending') {
+        trulyFresh.push(p);
+      }
+    }
+
     const byOperationType: Record<OperationType, number> = {
       regular_payment: 0,
       money_transfer: 0,
@@ -124,15 +143,15 @@ export class BackfillMpPayments {
 
     let lowConfidenceCount = 0;
 
-    if (fresh.length > 0) {
+    if (trulyFresh.length > 0) {
       const classifications = await this.batchClassifier.classifyBatch({
         user,
-        payments: fresh,
+        payments: trulyFresh,
       });
 
       // Map per-index — the contract guarantees same order as input.
-      for (let i = 0; i < fresh.length; i++) {
-        const payment = fresh[i];
+      for (let i = 0; i < trulyFresh.length; i++) {
+        const payment = trulyFresh[i];
         const classification = classifications[i];
         if (!classification) {
           this.log.warn(
@@ -167,7 +186,7 @@ export class BackfillMpPayments {
       }
     }
 
-    const totalImported = fresh.length;
+    const totalImported = trulyFresh.length;
 
     const summary = await this.summaries.create({
       userId: user.id,
