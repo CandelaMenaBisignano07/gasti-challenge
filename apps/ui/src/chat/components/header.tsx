@@ -1,3 +1,5 @@
+import Link from 'next/link';
+import { Settings } from 'lucide-react';
 import { ThemeToggle } from '@/shared/ui/theme-toggle';
 
 type HeaderProps = {
@@ -23,7 +25,16 @@ export function Header({ variant = 'solid', onTitleClick }: HeaderProps) {
       >
         Gasti
       </button>
-      <ThemeToggle />
+      <div className="flex items-center gap-s2">
+        <Link
+          href="/settings/categories"
+          aria-label="Configurar categorías"
+          className="inline-flex items-center justify-center h-9 w-9 rounded-pill text-ink-2 hover:bg-surface-3 transition-colors"
+        >
+          <Settings size={16} strokeWidth={1.6} />
+        </Link>
+        <ThemeToggle />
+      </div>
     </header>
   );
 }

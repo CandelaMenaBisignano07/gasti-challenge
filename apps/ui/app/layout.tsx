@@ -2,7 +2,6 @@ import type { Metadata } from 'next';
 import { Geist, Geist_Mono, Instrument_Serif } from 'next/font/google';
 import { ThemeProvider } from '@/shared/theme/theme-provider';
 import { ChatProvider } from '@/chat/infrastructure/chat-context';
-import { AppHeader } from '@/shared/ui/app-header';
 import './globals.css';
 
 const geist = Geist({
@@ -35,10 +34,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="es" className={`${geist.variable} ${geistMono.variable} ${instrumentSerif.variable}`}>
       <body>
         <ThemeProvider>
-          <ChatProvider>
-            <AppHeader />
-            {children}
-          </ChatProvider>
+          <ChatProvider>{children}</ChatProvider>
         </ThemeProvider>
       </body>
     </html>
