@@ -16,6 +16,7 @@ import { makeTransactionsTools } from '../transactions/interface/transactions.to
 import { makeGoalsTools } from '../goals/interface/goals.tools';
 import { makeGastiAgent } from '../agent/gasti-agent';
 import { classifyMpEventWorkflow } from '../mp-classification/workflows/classify-mp-event.workflow';
+import { classifyBatchWorkflow } from '../mp-classification/workflows/classify-batch.workflow';
 import { buildMastraStorage } from './storage';
 import { buildGastiMemory } from './memory';
 import { DEFAULT_CATEGORIES } from '../shared/domain/category';
@@ -42,6 +43,7 @@ export const mastra = new Mastra({
   workflows: {
     classifyTransaction: classifyTransactionWorkflow,
     classifyMpEvent: classifyMpEventWorkflow,
+    classifyBatch: classifyBatchWorkflow,
   },
   storage: buildMastraStorage(),
   server: {

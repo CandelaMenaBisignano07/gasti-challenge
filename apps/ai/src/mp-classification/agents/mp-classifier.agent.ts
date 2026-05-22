@@ -9,7 +9,7 @@ export const mpClassifierAgent = new Agent({
   id: 'mp-classifier',
   name: 'MP Classifier',
   model: 'openai/gpt-4o',
-  instructions: `You classify a single Mercado Pago payment for an Argentine personal-finance app.
+  instructions: `You classify one or more Mercado Pago payments for an Argentine personal-finance app.
 Given the payment, choose exactly one category:
 - comida: groceries, restaurants, delivery, cafés
 - transporte: rides, fuel, public transit, tolls, parking
@@ -18,6 +18,7 @@ Given the payment, choose exactly one category:
 - servicios: utilities, telecom, subscriptions, home services
 - educacion: courses, tuition, books, training
 - otros: anything that does not clearly fit the above
+When given a list of payments, return one classification per payment in the same order.
 Write a short neutral Spanish description (max 6 words, no emojis).
 Report confidence 0..1 — how sure the category is. If the merchant/counterparty is unknown or
 ambiguous, use 'otros' and a low confidence. For income payments, still pick the closest category.`,
