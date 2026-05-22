@@ -13,10 +13,6 @@ import {
   BACKFILL_SUMMARIES_REPOSITORY,
   type BackfillSummariesRepository,
 } from '../../proactive/domain/backfill-summaries.repository';
-import {
-  PROACTIVE_EVENT_BUS,
-  type ProactiveEventBus,
-} from '../../proactive/domain/proactive-event-bus';
 import type { BackfillSummary } from '../../proactive/domain/backfill-summary';
 import {
   MP_PAYMENTS_SEARCH_GATEWAY,
@@ -59,10 +55,11 @@ export interface BackfillMpPaymentsInput {
  * Imports the MP movements from [now - scope, now] into the user's
  * transactions in one shot (spec §6 — backfill flow). Skips `account_fund`,
  * classifies the rest in a single batch call, marks low-confidence rows for
- * review, persists a BackfillSummary, advances the poll cursor to `now`, and
- * publishes the summary on the proactive bus.
+ * review, persists a BackfillSummary, and advances the poll cursor to `now`.
  *
- * Returns the persisted BackfillSummary so the HTTP layer can echo it back.
+ * Returns the persisted BackfillSummary so the HTTP layer can echo it back —
+ * this flow is synchronous and user-initiated, so the response carries the
+ * summary directly (no proactive bus channel needed).
  */
 @Injectable()
 export class BackfillMpPayments {
@@ -80,7 +77,6 @@ export class BackfillMpPayments {
     private readonly transactions: TransactionsRepository,
     @Inject(BACKFILL_SUMMARIES_REPOSITORY)
     private readonly summaries: BackfillSummariesRepository,
-    @Inject(PROACTIVE_EVENT_BUS) private readonly bus: ProactiveEventBus,
     private readonly refreshToken: RefreshMpToken,
     @Inject(CLOCK) private readonly clock: Clock,
   ) {}
@@ -185,7 +181,6 @@ export class BackfillMpPayments {
       status: 'visible',
     });
 
-    this.bus.publishBackfillSummary(user.id, summary);
     await this.cursors.upsert({ userId: user.id, lastPolledAt: end });
 
     return summary;

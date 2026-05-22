@@ -17,7 +17,6 @@ import type {
 import type { Transaction } from '../../shared/domain/transaction';
 import type { BackfillSummariesRepository } from '../../proactive/domain/backfill-summaries.repository';
 import type { BackfillSummary } from '../../proactive/domain/backfill-summary';
-import type { ProactiveEventBus } from '../../proactive/domain/proactive-event-bus';
 import type { Clock } from '../../shared/providers/clock';
 import type { RefreshMpToken } from './refresh-mp-token.use-case';
 
@@ -127,14 +126,6 @@ describe('BackfillMpPayments — happy path', () => {
       upsert: cursorUpsert,
     } satisfies MpPollCursorsRepository;
 
-    const publishBackfillSummary = mock(() => {});
-    const bus = {
-      publish: () => {},
-      subscribe: () => () => {},
-      publishBackfillSummary,
-      subscribeBackfillSummaries: () => () => {},
-    } satisfies ProactiveEventBus;
-
     const getById = mock(async () => user);
     const users = { getById } as unknown as UsersRepository;
 
@@ -151,7 +142,6 @@ describe('BackfillMpPayments — happy path', () => {
       batchClassifier,
       transactions,
       summaries,
-      bus,
       refresh,
       clock,
     );
@@ -197,10 +187,6 @@ describe('BackfillMpPayments — happy path', () => {
     expect(summaryInput.lowConfidenceCount).toBe(1);
     expect(summaryInput.truncated).toBe(false);
     expect(summaryInput.status).toBe('visible');
-
-    expect(publishBackfillSummary.mock.calls).toHaveLength(1);
-    expect(publishBackfillSummary.mock.calls[0][0]).toBe('u1');
-    expect(publishBackfillSummary.mock.calls[0][1]).toBe(createdSummary);
 
     // Refresh path NOT exercised (token expires in 2030).
     expect(refreshExecute.mock.calls).toHaveLength(0);
@@ -303,14 +289,6 @@ describe('BackfillMpPayments — happy path', () => {
       upsert: cursorUpsert,
     } satisfies MpPollCursorsRepository;
 
-    const publishBackfillSummary = mock(() => {});
-    const bus = {
-      publish: () => {},
-      subscribe: () => () => {},
-      publishBackfillSummary,
-      subscribeBackfillSummaries: () => () => {},
-    } satisfies ProactiveEventBus;
-
     const getById = mock(async () => user);
     const users = { getById } as unknown as UsersRepository;
 
@@ -327,7 +305,6 @@ describe('BackfillMpPayments — happy path', () => {
       batchClassifier,
       transactions,
       summaries,
-      bus,
       refresh,
       clock,
     );
