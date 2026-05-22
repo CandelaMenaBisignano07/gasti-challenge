@@ -18,7 +18,10 @@ export function makeGastiAgent({ tools, memory }: GastiAgentDeps) {
     requestContextSchema: z.object({
       today: z.string(),
       userId: z.string(),
-      categories: z.array(z.string()),
+      categoriesWithDescriptions: z.array(z.object({
+        name: z.string(),
+        description: z.string(),
+      })),
       sessionResumed: z.boolean().optional(),
     }),
     tools: tools as never,

@@ -8,7 +8,13 @@ function context(values: Record<string, unknown>): RequestContext {
   return rc;
 }
 
-const base = { today: '2026-05-18', categories: ['comida', 'transporte'] };
+const base = {
+  today: '2026-05-18',
+  categoriesWithDescriptions: [
+    { name: 'comida', description: 'x' },
+    { name: 'transporte', description: 'y' },
+  ],
+};
 
 test('includes the session-resume clause when sessionResumed is true', () => {
   const prompt = buildInstructions(context({ ...base, sessionResumed: true }));
@@ -26,4 +32,21 @@ test('tells the agent to drop a lapsed mutation silently', () => {
 
 test('tells the agent to re-call proposeTransactionMutation on a repeated request', () => {
   expect(buildInstructions(context(base))).toContain('repeating or rephrasing');
+});
+
+test('instructions interpolate categories as "- name: description" lines', () => {
+  const mockContext = {
+    get(key: string) {
+      if (key === 'today') return '2026-05-22';
+      if (key === 'categoriesWithDescriptions')
+        return [
+          { name: 'comida', description: 'restaurantes y delivery' },
+          { name: 'mascotas', description: '' },
+        ];
+      return undefined;
+    },
+  } as never;
+  const prompt = buildInstructions(mockContext);
+  expect(prompt).toContain('- comida: restaurantes y delivery');
+  expect(prompt).toContain('- mascotas: (sin descripción)');
 });

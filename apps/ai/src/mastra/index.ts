@@ -50,12 +50,14 @@ export const mastra = new Mastra({
         try {
           const { categories } = await categorizationGateway.list({}, { userId: 'default-user' });
           requestContext.set(
-            'categories',
-            categories.map((c) => c.name),
+            'categoriesWithDescriptions',
+            categories.map((c) => ({ name: c.name, description: c.description })),
           );
         } catch {
-          // TODO Task 8.2: rewrite to set 'categoriesWithDescriptions' instead.
-          requestContext.set('categories', DEFAULT_CATEGORIES.map((c) => c.name));
+          requestContext.set(
+            'categoriesWithDescriptions',
+            DEFAULT_CATEGORIES.map((c) => ({ name: c.name, description: c.description })),
+          );
         }
         await next();
       },
