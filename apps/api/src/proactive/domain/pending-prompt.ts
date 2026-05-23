@@ -3,7 +3,11 @@ import type { Category } from '../../shared/domain/category';
 export type PaymentKind = 'income' | 'expense';
 export type PendingPromptStatus = 'pending' | 'added' | 'discarded' | 'auto';
 export type ProactiveIntent = 'confirm' | 'notice';
-export type NoticeReason = 'mp_refund' | 'mp_chargeback';
+export type NoticeReason =
+  | 'mp_refund'
+  | 'mp_chargeback'
+  | 'mp_cancellation'
+  | 'mp_chargeback_reimbursed';
 
 export interface PendingPrompt {
   readonly id: string;
