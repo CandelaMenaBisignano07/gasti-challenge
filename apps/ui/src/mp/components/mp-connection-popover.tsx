@@ -28,8 +28,11 @@ export function MpConnectionPopover({
 }: MpConnectionPopoverProps) {
   return (
     <Card
-      variant="frosted"
+      variant="plain"
       radius="lg"
+      elevation={3}
+      role="dialog"
+      aria-label="Cuenta de Mercado Pago"
       className="absolute bottom-full left-0 z-10 mb-s2 w-64 px-s4 py-s3"
     >
       <p className="font-display text-[13px] leading-[1.5] text-ink-2">
