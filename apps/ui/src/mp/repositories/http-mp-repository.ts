@@ -10,13 +10,19 @@ const DEFAULT_API_BASE_URL = 'http://localhost:3001';
 
 export class HttpMpRepository implements MpRepository {
   private readonly base: string;
+  // OAuth start needs an origin that MP can redirect back to over HTTPS.
+  // When the rest of the API lives on http://localhost:3001 (e.g. because
+  // Cloudflare quick-tunnels buffer SSE responses), keep only OAuth on the
+  // tunnel via NEXT_PUBLIC_MP_OAUTH_BASE_URL; fall back to `base` otherwise.
+  private readonly oauthBase: string;
 
-  constructor(base: string = process.env.NEXT_PUBLIC_API_BASE_URL ?? DEFAULT_API_BASE_URL) {
+  constructor(base: string = process.env.NEXT_PUBLIC_API_BASE_URL || DEFAULT_API_BASE_URL) {
     this.base = base;
+    this.oauthBase = process.env.NEXT_PUBLIC_MP_OAUTH_BASE_URL || base;
   }
 
   startConnectUrl(): string {
-    return `${this.base}/mp/oauth/start`;
+    return `${this.oauthBase}/mp/oauth/start`;
   }
 
   async getStatus(): Promise<MpConnection> {
