@@ -1,6 +1,7 @@
 import { Card } from '@/shared/ui/card';
 import { Num } from '@/shared/ui/num';
 import { BarMeter } from '@/shared/ui/bar-meter';
+import { capitalize } from '@/shared/format/capitalize';
 import { resolveBudgetFraction, resolveBudgetTone } from '@/budgets/providers/budget-state';
 import type { BudgetProgress } from '@/budgets/domain/budget-progress';
 
@@ -12,7 +13,7 @@ type BudgetProgressCardProps = {
 export function BudgetProgressCard({ progress, caption }: BudgetProgressCardProps) {
   const tone = resolveBudgetTone(progress);
   const fraction = resolveBudgetFraction(progress);
-  const label = progress.category.charAt(0).toUpperCase() + progress.category.slice(1);
+  const label = capitalize(progress.category);
 
   return (
     <Card variant="lavender" radius="lg" className="p-s4 px-s5">
