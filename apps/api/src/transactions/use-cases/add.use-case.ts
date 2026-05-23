@@ -83,6 +83,7 @@ export class AddTransaction {
       direction: input.direction ?? 'expense',
       status: 'active',
       statusChangedAt: null,
+      statusDetail: null,
       source: input.source ?? 'manual',
       mpPaymentId: input.mpPaymentId ?? null,
       needsReview: false,
