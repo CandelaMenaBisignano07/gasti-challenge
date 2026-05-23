@@ -50,6 +50,7 @@ export class JsonTransactionsRepository implements TransactionsRepository {
       mpPaymentId: input.mpPaymentId ?? null,
       needsReview: input.needsReview ?? false,
       operationType: input.operationType ?? null,
+      counterparty: input.counterparty ?? null,
     });
     await this.add(tx);
     return tx;

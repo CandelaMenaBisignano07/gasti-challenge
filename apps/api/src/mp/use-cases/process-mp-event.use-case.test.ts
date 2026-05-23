@@ -180,11 +180,13 @@ function build(opts: {
   const promptsRepo = fakePendingPromptsRepo(opts.prompts ?? []);
   const bus = fakeBus();
   const classifier = fakeClassifier(opts.verdict);
+  const fakeUserLookup = { lookupNickname: async () => null };
   const useCase = new ProcessMpEvent(
     classifier.classifier,
     txRepo,
     promptsRepo.repo,
     bus.bus,
+    fakeUserLookup,
     new MarkTransactionReversed(txRepo, fixedClock('2026-05-18')),
     fixedClock('2026-05-18'),
   );

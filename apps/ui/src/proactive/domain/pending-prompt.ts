@@ -10,6 +10,8 @@ export type PendingPrompt = {
   kind: PendingPromptKind;
   amount: number;
   merchant: string | null;
+  /** Human-readable payer name for income prompts. Null for expenses. */
+  counterparty: string | null;
   paymentDate: string;
   suggestedCategory: string;
   suggestedDescription: string;

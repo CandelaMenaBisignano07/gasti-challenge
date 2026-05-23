@@ -26,6 +26,7 @@ export interface AddTransactionInput {
   direction?: TransactionDirection;
   source?: TransactionSource;
   mpPaymentId?: string | null;
+  counterparty?: string | null;
 }
 
 @Injectable()
@@ -86,6 +87,7 @@ export class AddTransaction {
       mpPaymentId: input.mpPaymentId ?? null,
       needsReview: false,
       operationType: null,
+      counterparty: input.counterparty ?? null,
     };
     await this.repo.add(tx);
     return { transaction: tx };

@@ -149,6 +149,7 @@ describe('BackfillMpPayments — happy path', () => {
       transactions,
       summaries,
       prompts,
+      { lookupNickname: async () => null },
       refresh,
       clock,
     );
@@ -317,6 +318,7 @@ describe('BackfillMpPayments — happy path', () => {
       transactions,
       summaries,
       prompts,
+      { lookupNickname: async () => null },
       refresh,
       clock,
     );
@@ -456,6 +458,7 @@ describe('BackfillMpPayments — happy path', () => {
       transactions,
       summaries,
       prompts,
+      { lookupNickname: async () => null },
       refresh,
       clock,
     );

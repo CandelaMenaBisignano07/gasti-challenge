@@ -60,6 +60,7 @@ export class ResolveProactivePrompt {
       direction: prompt.kind,
       source: 'mercadopago',
       mpPaymentId: prompt.mpPaymentId,
+      counterparty: prompt.counterparty,
     });
     await this.prompts.markAdded(prompt.id, transaction.id);
 

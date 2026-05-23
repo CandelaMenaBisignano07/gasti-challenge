@@ -7,13 +7,27 @@ export function merchantOf(p: MpPayment): string | null {
   return itemTitle ?? p.description ?? null;
 }
 
-/** Join the payer's first and last name when present. */
+/**
+ * Best-effort human-readable payer identifier:
+ *   1. "First Last" when MP returned either name field.
+ *   2. Otherwise the email local-part — readable handle even when the
+ *      remitter paid as invitado or hid their name (common for money
+ *      transfers between MP users where MP returns null names but always
+ *      keeps the email on file).
+ * Returns null if neither is available.
+ */
 export function payerNameOf(p: MpPayment): string | null {
-  const name = [p.payer?.first_name, p.payer?.last_name]
+  const fullName = [p.payer?.first_name, p.payer?.last_name]
     .filter((s): s is string => Boolean(s))
     .join(' ')
     .trim();
-  return name.length > 0 ? name : null;
+  if (fullName.length > 0) return fullName;
+  const email = p.payer?.email;
+  if (email && email.includes('@')) {
+    const local = email.split('@')[0];
+    if (local && local.length > 0) return local;
+  }
+  return null;
 }
 
 /** Income iff the collector is the connected user; expense otherwise. */

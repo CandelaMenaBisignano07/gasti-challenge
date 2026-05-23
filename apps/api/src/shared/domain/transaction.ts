@@ -22,6 +22,11 @@ export const transactionSchema = z.object({
   statusChangedAt: z.string().nullable().default(null),
   source: transactionSource.default('manual'),
   mpPaymentId: z.string().nullable().default(null),
+  // Human-readable other party in the transaction. For MP income, this is
+  // the payer's name (`payerNameOf(payment)`); for MP expenses it's null
+  // because `merchant` already conveys it. Null on manual transactions and
+  // older rows that pre-date this field.
+  counterparty: z.string().nullable().default(null),
   // `needsReview` is set true when a backfilled transaction's classification
   // confidence falls below the LOW_CONFIDENCE threshold. The UI surfaces these
   // for the user to inspect.

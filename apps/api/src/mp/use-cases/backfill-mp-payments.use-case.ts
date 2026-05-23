@@ -31,6 +31,10 @@ import {
   type BatchClassifier,
 } from '../domain/batch-classifier';
 import {
+  MP_USER_LOOKUP_GATEWAY,
+  type MpUserLookupGateway,
+} from '../domain/mp-user-lookup.gateway';
+import {
   backfillScopeDurationMs,
   type BackfillScope,
 } from '../domain/backfill-scope';
@@ -40,7 +44,7 @@ import {
   type OperationType,
 } from '../domain/operation-type';
 import type { MpPayment } from '../domain/mp-payment';
-import { merchantOf, paymentDirection } from '../domain/mp-payment-extract';
+import { merchantOf, payerNameOf, paymentDirection } from '../domain/mp-payment-extract';
 import { RefreshMpToken } from './refresh-mp-token.use-case';
 
 // Same skew as PollMpPayments — keep the two pipelines consistent.
@@ -83,6 +87,8 @@ export class BackfillMpPayments {
     private readonly summaries: BackfillSummariesRepository,
     @Inject(PENDING_PROMPTS_REPOSITORY)
     private readonly prompts: PendingPromptsRepository,
+    @Inject(MP_USER_LOOKUP_GATEWAY)
+    private readonly userLookup: MpUserLookupGateway,
     private readonly refreshToken: RefreshMpToken,
     @Inject(CLOCK) private readonly clock: Clock,
   ) {}
@@ -169,6 +175,23 @@ export class BackfillMpPayments {
         const direction: 'income' | 'expense' = paymentDirection(payment, user);
         const merchant = merchantOf(payment) ?? 'Mercado Pago';
         const date = dateOf(payment, end);
+        // Counterparty resolution:
+        //   - Income: payer name (or email-local-part fallback).
+        //   - Outgoing peer transfer: MP hides the recipient's name in the
+        //     `collector` block, but the public `/users/{id}` endpoint
+        //     exposes a nickname. Lookup is cached, so backfilling N
+        //     transfers to the same recipient costs one round-trip.
+        //   - Outgoing payment to a commerce: merchant already conveys it,
+        //     so we skip the lookup and leave counterparty null.
+        let counterparty: string | null = null;
+        if (direction === 'income') {
+          counterparty = payerNameOf(payment);
+        } else if (opType === 'money_transfer' && payment.collector?.id) {
+          counterparty = await this.userLookup.lookupNickname(
+            String(payment.collector.id),
+            accessToken,
+          );
+        }
 
         await this.transactions.create({
           userId: user.id,
@@ -182,6 +205,7 @@ export class BackfillMpPayments {
           mpPaymentId: String(payment.id),
           needsReview: lowConfidence,
           operationType: opType,
+          counterparty,
         });
       }
     }

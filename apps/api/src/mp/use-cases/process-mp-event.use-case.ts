@@ -16,6 +16,10 @@ import {
 import type { NoticeReason, PaymentKind } from '../../proactive/domain/pending-prompt';
 import type { NewPendingPrompt } from '../../proactive/domain/pending-prompts.repository';
 import { PAYMENT_CLASSIFIER, type PaymentClassifier } from '../domain/payment-classifier';
+import {
+  MP_USER_LOOKUP_GATEWAY,
+  type MpUserLookupGateway,
+} from '../domain/mp-user-lookup.gateway';
 import { isCompletedPayment } from '../domain/is-completed-payment';
 import { mapMpStatusToTransactionStatus } from '../domain/map-mp-status';
 import { normalizeOperationType } from '../domain/operation-type';
@@ -49,6 +53,7 @@ export class ProcessMpEvent {
     @Inject(TRANSACTIONS_REPOSITORY) private readonly transactions: TransactionsRepository,
     @Inject(PENDING_PROMPTS_REPOSITORY) private readonly prompts: PendingPromptsRepository,
     @Inject(PROACTIVE_EVENT_BUS) private readonly bus: ProactiveEventBus,
+    @Inject(MP_USER_LOOKUP_GATEWAY) private readonly userLookup: MpUserLookupGateway,
     private readonly markReversed: MarkTransactionReversed,
     @Inject(CLOCK) private readonly clock: Clock,
   ) {}
@@ -78,6 +83,7 @@ export class ProcessMpEvent {
           suggestedCategory: existingTx.category,
           suggestedDescription: existingTx.description,
           merchant: existingTx.merchant,
+          counterparty: existingTx.counterparty,
           confidence: 1,
         }),
       );
@@ -108,7 +114,28 @@ export class ProcessMpEvent {
 
     const kind: PaymentKind = paymentDirection(payment, user);
     const merchant = merchantOf(payment);
-    const counterparty = kind === 'income' ? payerNameOf(payment) : merchant;
+    // Counterparty resolution mirrors BackfillMpPayments:
+    //   - Income: payer name / email-local fallback.
+    //   - Outgoing peer transfer: nickname lookup on /users/{collector.id},
+    //     cached in the gateway across calls.
+    //   - Outgoing commerce: null (merchant already conveys it).
+    let counterparty: string | null = null;
+    if (kind === 'income') {
+      counterparty = payerNameOf(payment);
+    } else if (
+      payment.operation_type === 'money_transfer' &&
+      payment.collector?.id &&
+      user.mpAccessToken
+    ) {
+      counterparty = await this.userLookup.lookupNickname(
+        String(payment.collector.id),
+        user.mpAccessToken,
+      );
+    }
+    // Classifier sees the most informative counterparty available: same
+    // value we just computed for persistence (payer name for income,
+    // recipient nickname for outgoing transfer, merchant otherwise).
+    const classifierCounterparty = counterparty ?? merchant;
 
     const classification = await this.classifier.classify({
       user,
@@ -116,7 +143,7 @@ export class ProcessMpEvent {
       amount: payment.transaction_amount,
       merchant,
       description: payment.description ?? null,
-      counterparty,
+      counterparty: classifierCounterparty,
     });
 
     const prompt = await this.prompts.create(
@@ -131,6 +158,7 @@ export class ProcessMpEvent {
         suggestedCategory: classification.category,
         suggestedDescription: classification.suggestedDescription,
         merchant,
+        counterparty,
         confidence: classification.confidence,
       }),
     );
@@ -148,6 +176,7 @@ export class ProcessMpEvent {
     suggestedCategory: NewPendingPrompt['suggestedCategory'];
     suggestedDescription: string;
     merchant: string | null;
+    counterparty: string | null;
     confidence: number;
   }): NewPendingPrompt {
     const now = this.clock.now().toISOString();
@@ -159,6 +188,7 @@ export class ProcessMpEvent {
       kind: args.kind,
       amount: args.payment.transaction_amount,
       merchant: args.merchant,
+      counterparty: args.counterparty,
       paymentDate,
       suggestedCategory: args.suggestedCategory,
       suggestedDescription: args.suggestedDescription,

@@ -9,18 +9,21 @@ import type {
 } from '../domain/pending-prompts.repository';
 
 /**
- * Persisted row shape — same as `PendingPrompt`, except `operationType` is
- * optional because rows written before T19 don't have it on disk.
+ * Persisted row shape — same as `PendingPrompt`, except `operationType` and
+ * `counterparty` are optional because rows written before those fields landed
+ * don't have them on disk.
  */
-type Row = Omit<PendingPrompt, 'operationType'> & {
+type Row = Omit<PendingPrompt, 'operationType' | 'counterparty'> & {
   operationType?: PendingPrompt['operationType'];
+  counterparty?: PendingPrompt['counterparty'];
 };
 
-/** Default to `regular_payment` for legacy rows missing the field. */
+/** Apply field defaults for legacy rows missing the newer fields. */
 function toEntity(row: Row): PendingPrompt {
   return {
     ...row,
     operationType: row.operationType ?? 'regular_payment',
+    counterparty: row.counterparty ?? null,
   };
 }
 

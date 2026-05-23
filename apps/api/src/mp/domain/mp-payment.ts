@@ -25,6 +25,17 @@ export interface MpPayment {
   date_approved?: string | null;
   date_created?: string | null;
   collector_id?: number | null;
+  /**
+   * Recipient block. MP returns this on outgoing payments (you paid someone);
+   * the user-facing fields (name, email) are usually null for privacy, but
+   * `id` lets us look up the public nickname via `/users/{id}`.
+   */
+  collector?: {
+    id?: number | null;
+    first_name?: string | null;
+    last_name?: string | null;
+    email?: string | null;
+  } | null;
   payer?: {
     first_name?: string | null;
     last_name?: string | null;

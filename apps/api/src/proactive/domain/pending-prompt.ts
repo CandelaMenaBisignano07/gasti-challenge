@@ -12,6 +12,9 @@ export interface PendingPrompt {
   readonly kind: PaymentKind;
   readonly amount: number;
   readonly merchant: string | null;
+  /** Human-readable payer name for income prompts. Null for expenses
+   *  (merchant already conveys it) and legacy rows. */
+  readonly counterparty: string | null;
   readonly paymentDate: string; // ISO
   readonly suggestedCategory: Category;
   readonly suggestedDescription: string;

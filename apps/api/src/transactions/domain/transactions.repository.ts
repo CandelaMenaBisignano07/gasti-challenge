@@ -25,6 +25,7 @@ export interface CreateTransactionInput {
   readonly mpPaymentId?: string | null;
   readonly needsReview?: boolean;
   readonly operationType?: OperationType | null;
+  readonly counterparty?: string | null;
 }
 
 export interface TransactionsRepository {

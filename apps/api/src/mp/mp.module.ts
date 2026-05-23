@@ -18,6 +18,8 @@ import { BATCH_CLASSIFIER } from './domain/batch-classifier';
 import { HttpBatchClassifier } from './providers/http-batch-classifier';
 import { MP_PAYMENTS_SEARCH_GATEWAY } from './domain/mp-payments-search.gateway';
 import { HttpMpPaymentsSearchGateway } from './providers/http-mp-payments-search.gateway';
+import { MP_USER_LOOKUP_GATEWAY } from './domain/mp-user-lookup.gateway';
+import { HttpMpUserLookupGateway } from './providers/http-mp-user-lookup.gateway';
 import { MP_POLL_CURSORS_REPOSITORY } from './domain/mp-poll-cursors.repository';
 import { JsonMpPollCursorsRepository } from './repositories/json-mp-poll-cursors.repository';
 import { BACKFILL_SUMMARIES_REPOSITORY } from '../proactive/domain/backfill-summaries.repository';
@@ -41,6 +43,7 @@ import { MpPollScheduler } from './infrastructure/mp-poll.scheduler';
     { provide: PAYMENT_CLASSIFIER, useClass: HttpPaymentClassifier },
     { provide: BATCH_CLASSIFIER, useClass: HttpBatchClassifier },
     { provide: MP_PAYMENTS_SEARCH_GATEWAY, useClass: HttpMpPaymentsSearchGateway },
+    { provide: MP_USER_LOOKUP_GATEWAY, useClass: HttpMpUserLookupGateway },
     { provide: MP_POLL_CURSORS_REPOSITORY, useClass: JsonMpPollCursorsRepository },
     { provide: BACKFILL_SUMMARIES_REPOSITORY, useClass: JsonBackfillSummariesRepository },
   ],
