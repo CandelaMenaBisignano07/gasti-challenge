@@ -1,196 +1,158 @@
-# Challenge — Gasti
+# Gasti prueba tecnica
 
-## Contexto
+> Docs de dominio: [`PRODUCT.md`](./PRODUCT.md)·
+> Design system [`DESIGN.md`](./DESIGN.md) 
+> Rules tecnicas[`CLAUDE.md`](./CLAUDE.md) 
+> Workflow con IA y experiencia con Mastra [`WRITEUP.md`](./WRITEUP.md).
 
-Este challenge no evalúa si sos crack técnicamente — no nos importa tanto. Lo que queremos ver es:
+## Cómo correrlo localmente
 
-1. Cómo trabajás con IA (no como autocomplete: como pareja de trabajo).
-2. Si podés meterte rápido en un framework nuevo y usarlo idiomáticamente.
-3. Si podés moverte en un stack que tal vez no es el tuyo (React + Nest).
-
-**Vibecodear está bien.** Más que bien: es lo que esperamos.
-Lo que no está bien es vibecodear sin criterio: usar IA como buscador glorificado, no investigar qué hay disponible, no pensar antes de tirarle prompts.
-
----
-
-## El task
-
-Construir una herramienta para finanzas personales. Que tiene que hacer? Lo que vos creas que tiene que hacer, la libertad es total. 
-
-### Stack
-
-- **Frontend:** React.
-- **Backend:** NestJS.
-- **Agente:** [Mastra](https://mastra.ai). No es opcional — queremos ver cómo te metés en un framework moderno de agentes.
-- **LLM:** el provider que elijas (OpenAI, Anthropic, lo que esté soportado por Mastra).
-- **Datos:** un JSON mock con ~50 transacciones que vas a inventar (categorías, montos, fechas, descripciones realistas).
-
-### Qué tiene que hacer
-
-Un asistente de finanzas personales, 100% conversacional.
-
----
-
-## Sobre cómo construirlo
-
-Esto no es código que tenés que tipear vos línea por línea. Es producto que tenés que shippear usando IA como pareja de trabajo.
-
-**Sobre Mastra:** lee la docs antes de tipear. Mastra tiene primitivas específicas (agents, tools con schemas Zod, workflows, memory) — usalas idiomáticamente, no las recrees a mano. Si terminás escribiendo tu propio loop de tool-calling, algo salió mal.
-
-**Sobre el proceso de dev con IA:** hay todo un ecosistema de metodologías para trabajar con agentes coding como pareja, no como autocomplete. Ejemplos para que mires: [Superpowers](https://github.com/obra/superpowers) de Jesse Vincent, [Spec-Driven Development / spec-kit](https://github.com/github/spec-kit/blob/main/spec-driven.md) de GitHub. No te pedimos que uses uno específico — sí que tengas un proceso pensado y nos lo cuentes.
-Yo preparo documentos detallados: 1) db.md 2) context.md 3) etc. -> cada uno con un dominio particular. Una vez estoy conforme con todos los documentos, paso a implementarlo.
-
----
-
-## Tu impronta
-
-Lo más fácil es entregar algo que cumple el brief y nada más. Lo más fácil también es lo más fácil de descartar.
-
-Queremos ver **tu mano** en esto. ¿Qué harías si fuera tu producto, no nuestro challenge?
-
-Algunas formas en las que se nota:
-- Una tool que no pedimos pero tiene sentido en el dominio (comparar mes vs mes, detectar suscripciones zombi, proyectar fin de mes, lo que veas vos).
-- Un detalle de UX con criterio: cómo presentás los tool-calls, qué pasa cuando el agente no sabe, cómo manejás errores.
-- Un ángulo de producto que se te ocurre a vos porque vos usarías esto.
-- Un uso de Mastra que vaya más allá del happy path: streaming bien hecho, memory que recuerda lo que importa, un workflow donde tenga sentido (no donde quede lindo).
-
-No es "agregar features para impresionar". Es la diferencia entre alguien que ejecuta y alguien con quien queremos construir.
-
----
-
-## Entregable
-
-Un repo (GitHub o lo que uses) con:
-
-1. **Código.**
-2. **README** que explique:
-   - Cómo correrlo localmente.
-   - Qué tools elegiste para el agente y por qué.
-   - Decisiones de producto que tomaste.
-   - Qué dejarías para después.
-3. **Un writeup corto (1 página)** sobre tu proceso:
-   - Cómo te metiste en Mastra. Qué primitivas usaste y por qué. Qué te costó, qué te sorprendió.
-   - Qué metodología seguiste para trabajar con la IA durante el desarrollo (specs, planes, subagentes, lo que hayas hecho).
-   - Si investigaste herramientas o frameworks adicionales y los descartaste, contanos por qué.
-4. **Un loom de 3-5 min** mostrando:
-   - La app funcionando.
-   - Cómo trabajaste con IA durante el desarrollo. Mostrá prompts y outputs reales, no resumas. Si usaste Cursor, Claude Code, Codex, lo que sea — mostralo.
-
----
-
-## Cómo te vamos a evaluar
-
-| Criterio | Qué miramos |
-|---|---|
-| AI-native dev | ¿Usás IA como pareja o como autocomplete? ¿Cómo organizás el trabajo con ella? |
-| Profundidad en Mastra | ¿Usaste las primitivas idiomáticamente o lo trataste como API random? |
-| Tools del agente | ¿Las tools tienen sentido para el dominio? ¿Pensaste como producto? |
-| Velocidad | ¿Pudiste shippear algo funcional en un stack que tal vez no conocés? |
-| Comunicación | ¿El writeup y el loom son claros? ¿Sabés explicar lo que hiciste y por qué? |
-
-No miramos: code style, arquitectura tipo libro, performance, tests. PERO, si te interesa: usamos Clean architecture, use-cases, providers, repositories, dependency injection 👀👀👀👀
-
----
-
-# Starter
-
-Este repo viene con el scaffolding listo. Vos construís el resto encima.
-
-## Estructura
-
-```
-gasti-challenge/
-├── apps/
-│   ├── api/    # NestJS — solo GET /health
-│   ├── ui/     # Next.js (App Router) + Tailwind — placeholder
-│   └── ai/     # Mastra — agent placeholder, tools/ y workflows/ vacías
-└── data/       # transactions.json (50 mock txs ARS, ~60 días) — usalo o reemplazalo
-```
-
-Stack del starter: **Bun** workspaces + **Turborepo** + **TypeScript** en todo.
-
-## Setup
+**Requisitos:** [Bun](https://bun.sh) `1.3+` y una API key de OpenAI.
 
 ```bash
+# 1. Dependencias
 bun install
-cp apps/ai/.env.example apps/ai/.env   # agregá tu OPENAI_API_KEY (o el provider que uses)
-cp apps/api/.env.example apps/api/.env # credenciales Mercado Pago (ver sección abajo)
-cp apps/ui/.env.example apps/ui/.env   # NEXT_PUBLIC_API_BASE_URL (default http://localhost:3001)
+
+# 2. Variables de entorno del agente
+cp apps/ai/.env.example apps/ai/.env
+#    → editá apps/ai/.env y poné tu OPENAI_API_KEY
+
+# 3. Variables de entorno de la UI
+cp apps/ui/.env.example apps/ui/.env
+#    → asegurate de que MASTRA_BASE_URL apunte al dev server de Mastra:
+#      MASTRA_BASE_URL=http://localhost:4111
+
+# 4. Levantar las tres apps en paralelo
+bun dev
 ```
 
-Sin `apps/api/.env` el API arranca igual para los flujos base, pero la integración
-con Mercado Pago necesita `TOKEN_ENCRYPTION_KEY` y `MP_WEBHOOK_SECRET` definidos.
+Abrí **http://localhost:3000**. La API responde en `http://localhost:3001/health` y el
+playground de Mastra en `http://localhost:4111`.
 
-## Run
+Apps por separado, si hace falta:
 
 ```bash
-bun dev                    # las 3 apps en paralelo (turbo)
-bun dev --filter=api       # NestJS         → http://localhost:3001/health
-bun dev --filter=ui        # Next.js        → http://localhost:3000
-bun dev --filter=ai        # Mastra dev     → playground local
+bun dev --filter=api      # NestJS
+bun dev --filter=ui       # Next.js
+bun dev --filter=ai       # Mastra dev playground
+bun run build             # build de las tres (Turbo)
 ```
 
-## Mercado Pago
+**Tests** (use-cases de `apps/api`):
 
-Gasti se conecta a Mercado Pago para detectar pagos en tiempo real: el usuario
-vincula su cuenta vía OAuth y MP avisa cada pago por webhook. Gasti clasifica el
-movimiento y propone sumarlo como transacción.
+```bash
+cd apps/api && bun test    # 66 tests — proyección, overrides, insights, mutaciones
+```
+---
 
-### Variables de entorno
+## Tools del agente 
 
-`apps/api/.env` (copiá de `.env.example`):
+El agente tiene 28 tools que las pense agrupadas por feature. Pense que una persona cuando recurre a esta aplicacion quiere saber como ahorrar mas plata, para eso deberiamos tener en cuenta como la plata se mueve y tener claros nuestros objetivos. Para el primer punto existe la feature de gastos, ingresos y transacciones (la diferencia con gastos es que en ), para el segundo punto tenemos presupuestos, logros a los que queremos llegar e insights para descubrir patrones y volver a nuestro agente proactivo, y por ultimo tenemos un modulo de categorizacion para que el usuario pueda personalizar mas su experiencia (se lo separa como feature pero tiene que ver mas con la experiencia de usuario y customizacion, no con el dominio en si). 
 
-| Variable | Para qué |
+### Spending — el piso conversacional (5)
+
+| Tool | Por qué |
 |---|---|
-| `MP_CLIENT_ID` / `MP_CLIENT_SECRET` | Credenciales de tu app en el panel de MP |
-| `MP_REDIRECT_URI` | Callback OAuth — debe coincidir exacto: `<ngrok>/mp/oauth/callback` |
-| `MP_WEBHOOK_SECRET` | Secreto de firma para verificar webhooks entrantes (panel MP → Webhooks) |
-| `TOKEN_ENCRYPTION_KEY` | Clave AES-256-GCM (32 bytes base64) para cifrar tokens en disco |
-| `AI_BASE_URL` | Server Mastra del clasificador (default `http://localhost:4111`) |
-| `UI_BASE_URL` | Frontend al que vuelve el callback OAuth (default `http://localhost:3000`) |
+| `sumSpendByCategory` | Cubre preguntas comunes como "¿cuánto gasté en comida este mes?".|
+| `getSpendingBreakdown` | Desglose ranqueado: "¿en qué gasté más?". |
+| `getTopMerchants` | Te dice en que comercios gastas mas plata.|
+| `listTransactions` | Lookup filtrado por comercio / categorías / período; renderiza una card. |
+| `compareSpending` | "Compará abril vs mayo" con deltas por categoría. |
 
-`apps/ui/.env`: `NEXT_PUBLIC_API_BASE_URL` (default `http://localhost:3001`).
+### Insights — lo proactivo (3)
 
-Generá la clave de cifrado:
+| Tool | Por qué |
+|---|---|
+| `projectMonthEnd` | Proyecta el cierre del mes con los datos que se tienen hasta la fecha, pero avisa cuando los datos que se tienen no son los suficientes como para proyectar. |
+| `detectRecurringCharges` | Detecta suscripciones — el "streaming que te sangra sin que mires". |
+| `detectCategorySpikes` | Categorías que saltaron fuerte vs. el mes anterior. |
 
-```bash
-node -e "console.log(require('crypto').randomBytes(32).toString('base64'))"
-```
+Los insights **nunca se ofrecen solos**: son un add-on opcional a una pregunta genuina, y
+nunca aparecen en un turno de mutación.
 
-### Exponer el API con un túnel
+### Budgets — coaching de presupuesto (3)
 
-MP necesita una URL pública para mandar webhooks y redirigir el OAuth:
+`setBudget`, `clearBudget`, `getBudgetProgress` — maneja un presupuesto mensual por categoría desde la conversación y nos ayudan a saber si vamos al margen de ese presupuesto, si gastamos de mas, etc.
 
-```bash
-ngrok http 3001
-```
+### Income — marco contra ingresos (2)
 
-En el panel de desarrolladores de Mercado Pago, sobre tu aplicación:
+`declareIncome` (recurrente o one-off) y `getCashFlow` (flujo neto + tasa de ahorro
+aproximada). Sin ingreso declarado Gasti solo muestra gastos; con ingreso, contexto.
 
-- **Webhook** → `<ngrok>/mp/webhook`, tópico `payments`.
-- **Redirect URI** (OAuth) → `<ngrok>/mp/oauth/callback` (mismo valor en `MP_REDIRECT_URI`).
+### Categorization — categorías y correcciones (6)
 
-La MCP de Mercado Pago (`save_webhook`) puede registrar la URL del túnel sin
-entrar al panel.
+`overrideMerchantCategory` y `overrideTransactionCategory` (corregir a nivel comercio o a
+nivel transacción, con precedencia transacción → comercio → semilla). `createCategory`,
+`renameCategory`, `deleteCategory`, `listCategories`: **el usuario puede crear sus propias
+categorías** más allá de las siete por defecto — una decisión de producto, ver abajo.
 
-## Docs útiles
+### Transactions — mutaciones con confirmación (4)
 
-### Stack
+`addTransaction` (directa, no destructiva), `proposeTransactionMutation` (read-only,
+resuelve el target), `updateTransaction` y `deleteTransaction` (**gated**: solo corren
+después de una propuesta y una confirmación explícita del usuario). Una baja o edición
+nunca pasa como efecto colateral de un turno no relacionado.
 
-- **Bun** — package manager y runtime · https://bun.sh/docs
-- **Turborepo** — task runner / pipeline · https://turborepo.com/docs
-- **NestJS** — controllers, modules, providers, DI · https://docs.nestjs.com
-- **Next.js (App Router)** — server components, route handlers · https://nextjs.org/docs
-- **Tailwind CSS** — utility-first styling · https://tailwindcss.com/docs
+### Goals — metas de ahorro (5)
 
-### Agente
+`setGoal`, `listGoals`, `getGoalProgress`, `clearGoal`, `assessGoalRisk`. **No estaba en
+el brief** — lo agregué porque "¿llego a juntar para X?" es una pregunta natural de finanzas
+personales y cierra el triángulo gasto/presupuesto/ahorro.
 
-- **Mastra** — agents, tools (Zod schemas), workflows, memory · https://mastra.ai/docs
-- **Mastra Memory** — `lastMessages`, `semanticRecall` (vector + topK + messageRange) y `workingMemory` (template persistente por thread/resource). Paquetes `@mastra/memory` + `@mastra/libsql` para storage local · https://mastra.ai/docs/memory/overview
-- **Mastra Tools** — definí tools con `createTool({ id, inputSchema, outputSchema, execute })` y registralas en el agent · https://mastra.ai/docs/agents/using-tools-and-mcp
-- **AI SDK (Vercel)** — providers de modelos que Mastra consume (`@ai-sdk/openai`, `@ai-sdk/anthropic`, etc.) · https://ai-sdk.dev/docs
+---
 
-### Proceso con IA
+## Decisiones de producto
 
-- **Superpowers** (Jesse Vincent) — sistema de skills: brainstorming, writing-plans, TDD, debugging, code-review · https://github.com/obra/superpowers
-- **Spec Kit / SDD** (GitHub) — flujo `constitution → specify → clarify → plan → tasks → implement` · https://github.com/github/spec-kit/blob/main/spec-driven.md
+- **La lógica de negocio vive en `apps/api`, no en las tools.** Las tools definen cómo el
+  agente llama a la app — no deberían conocer la lógica de negocio. El brief admitía
+  mantener todo en la working memory de Mastra; lo moví a use-cases NestJS con repositorios
+  JSON, así el dominio queda testeable (66 tests) y las tools quedan finas. La working
+  memory de Mastra es solo un **espejo** del estado relevante (presupuestos, metas, ingreso)
+  para proactividad barata.
+- **Categorías custom.** Hay 7 categorías core fijas y, más allá de eso, el usuario puede
+  crear, renombrar y borrar las categorías que quiera. Si nombrás una categoría que no
+  existe, Gasti te ofrece crearla en vez de caer en `otros` en silencio: una transacción
+  nunca termina en una categoría default sin que lo sepas y lo puedas revertir.
+- **Mutaciones con confirmación en la conversación.** Antes de eliminar o editar una
+  transacción hay un filtro de confirmación explícito. Si justo después del mensaje de
+  confirmación el usuario salta a otro tema, la propuesta se da por cancelada — así el LLM
+  no alucina una baja que nunca se confirmó. La UI lo renderiza como pills
+  `Sí, borralo` / `Cancelar`, sin modal rojo.
+- **Metas de ahorro** como feature de pleno derecho (ver tools arriba).
+- **Tool-calls visibles.** Cada respuesta muestra qué tools llamó Gasti y con qué inputs.
+  Es una feature de confianza: la respuesta es verificable, no alucinada.
+- **Grounding estricto.** Gasti nunca inventa un número; si una tool no trae datos lo dice.
+  El silencio le gana a un número fabricado.
+- **Bilingüe de entrada, español de salida.** Entiende cualquier idioma; siempre responde
+  en español rioplatense, con formato de moneda `es-AR` (`$1.234,56`).
+- **Cards ricas para resultados estructurados.** `listTransactions` y `getBudgetProgress`
+  se renderizan como cards; el agente solo escribe la oración titular. Se logró con el hook
+  `transform.display` de Mastra, sin contaminar lo que ve el LLM.
+- **Errores honestos.** Toda tool envuelve su `outputSchema` con un sobre de error: si la
+  API falla, la tool devuelve `{ error, code, message }` válido y el agente narra la falla.
+
+---
+
+## Qué dejaría para después
+
+- **Integración real con Mercado Pago.** Diseñada por completo (cards proactivas vía
+  webhook, OAuth Connect, modelo multi-tenant — ver
+  `docs/superpowers/specs/2026-05-14-proactive-mercadopago-design.md`). Descoporada por
+  presupuesto de tiempo: requería ngrok, OAuth y enmiendas a `PRODUCT.md`. Queda como spec.
+- **Tags libres en transacciones.** Plan escrito
+  (`docs/superpowers/plans/2026-05-18-transaction-tags.md`), sin implementar.
+- **Persistencia con base de datos real.** Hoy los datos de dominio son JSON. Para
+  multi-usuario o concurrencia haría falta SQLite/Postgres detrás de los mismos contratos
+  de repositorio — el swap es por DI, el dominio no se entera.
+- **Workflows de Mastra.** No usé `Workflow`: el loop de tool-calling del agente alcanza.
+  Tendría sentido para un pipeline con pasos determinísticos (p. ej. ingestión de webhooks).
+- **Tests de la UI** y un suite e2e del flujo de chat completo.
+- **Multi-usuario / auth.** Fuera de scope de v1; el modelo ya scopea por `userId`.
+
+---
+
+## Stack
+
+NestJS 10 · Next.js 15 (App Router) + React 19 + Tailwind 3 · Mastra `^1.33`
+(`@mastra/core`, `@mastra/memory`, `@mastra/libsql`) · OpenAI `gpt-4o` vía AI SDK ·
+Bun + Turborepo · Zod · `bun:test`.
