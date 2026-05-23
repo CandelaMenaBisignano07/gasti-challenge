@@ -61,6 +61,8 @@ test('compare reports per-category deltas between two periods', async () => {
   });
   expect(result.totalA).toBe(9000);
   expect(result.totalB).toBe(12000);
+  expect(result.labelA).toBe('Abril 2026');
+  expect(result.labelB).toBe('Mayo 2026');
   const comida = result.categories.find((c) => c.category === 'comida');
   expect(comida).toEqual({ category: 'comida', totalA: 9000, totalB: 10000, delta: 1000, deltaPct: (1000 / 9000) * 100 });
 });

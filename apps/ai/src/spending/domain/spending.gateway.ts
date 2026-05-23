@@ -37,6 +37,8 @@ export const compareInput = z.object({ periodA: periodSchema, periodB: periodSch
 export const compareResult = z.object({
   totalA: z.number(),
   totalB: z.number(),
+  labelA: z.string(),
+  labelB: z.string(),
   categories: z.array(
     z.object({
       category: categorySchema,

@@ -13,6 +13,26 @@ export interface CompareInput {
   periodB: Period;
 }
 
+const MONTH_NAMES_ES = [
+  'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
+  'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre',
+];
+
+function labelFor(period: Period, range: DateRange): string {
+  switch (period.kind) {
+    case 'currentMonth':
+    case 'month': {
+      const ym = period.kind === 'month' ? period.month : range.from.slice(0, 7);
+      const [y, m] = ym.split('-');
+      return `${MONTH_NAMES_ES[Number(m) - 1]} ${y}`;
+    }
+    case 'lastNDays':
+      return `Últimos ${period.n} días`;
+    case 'customRange':
+      return `${range.from} → ${range.to}`;
+  }
+}
+
 @Injectable()
 export class CompareSpending {
   constructor(
@@ -24,6 +44,8 @@ export class CompareSpending {
   async execute(input: CompareInput) {
     const txs = await this.txRepo.all();
     const cats = await this.categories.resolveAll(txs);
+    const rangeA = this.periods.resolve(input.periodA);
+    const rangeB = this.periods.resolve(input.periodB);
     const sumByCat = (range: DateRange): Map<Category, number> => {
       const m = new Map<Category, number>();
       for (const t of txs) {
@@ -33,8 +55,8 @@ export class CompareSpending {
       }
       return m;
     };
-    const a = sumByCat(this.periods.resolve(input.periodA));
-    const b = sumByCat(this.periods.resolve(input.periodB));
+    const a = sumByCat(rangeA);
+    const b = sumByCat(rangeB);
     const categories = [...new Set<Category>([...a.keys(), ...b.keys()])]
       .map((category) => {
         const totalA = a.get(category) ?? 0;
@@ -47,6 +69,8 @@ export class CompareSpending {
     return {
       totalA: [...a.values()].reduce((s, v) => s + v, 0),
       totalB: [...b.values()].reduce((s, v) => s + v, 0),
+      labelA: labelFor(input.periodA, rangeA),
+      labelB: labelFor(input.periodB, rangeB),
       categories,
     };
   }
