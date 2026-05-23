@@ -24,7 +24,10 @@ export function ProactivePromptCard({ prompt }: ProactivePromptCardProps) {
   const [editing, setEditing] = useState(false);
   const [busy, setBusy] = useState(false);
 
-  const counterpart = prompt.merchant ?? prompt.suggestedDescription;
+  // For income with a payer name, surface the real sender (e.g. "Juan Pérez")
+  // instead of the generic MP merchant string.
+  const counterpart =
+    prompt.counterparty ?? prompt.merchant ?? prompt.suggestedDescription;
   const date = formatPromptDate(prompt.paymentDate);
   const { lead, relator } = pickLeadCopy({
     operationType: prompt.operationType,
@@ -45,7 +48,7 @@ export function ProactivePromptCard({ prompt }: ProactivePromptCardProps) {
   };
 
   return (
-    <Card variant="frosted" radius="lg" className="max-w-[540px] p-s4">
+    <Card variant="frosted" radius="lg" className="max-w-[540px] p-s4 animate-message-enter">
       <div className="flex flex-col gap-s2">
         <Eyebrow tone="ai">Gasti</Eyebrow>
 

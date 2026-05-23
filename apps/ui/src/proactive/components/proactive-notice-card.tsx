@@ -16,7 +16,7 @@ export function ProactiveNoticeCard({ prompt }: ProactiveNoticeCardProps) {
   const isRefund = prompt.noticeReason === 'mp_refund';
 
   return (
-    <Card variant="lavender" radius="lg" className="max-w-[540px] p-s4">
+    <Card variant="lavender" radius="lg" className="max-w-[540px] p-s4 animate-message-enter">
       <div className="flex flex-col gap-s2">
         <Eyebrow tone="ai">Gasti</Eyebrow>
 

@@ -13,7 +13,7 @@ export function BackfillSummaryCard({ summary, onDismiss }: BackfillSummaryCardP
   const { byOperationType } = summary;
 
   return (
-    <Card variant="frosted" radius="lg" className="max-w-[540px] p-s4">
+    <Card variant="frosted" radius="lg" className="max-w-[540px] p-s4 animate-message-enter">
       <Eyebrow tone="ai">Gasti</Eyebrow>
       <p className="mt-s2 font-display text-[17px] leading-[1.5] text-ink-1">
         Importé <strong>{summary.totalImported} movimientos</strong> de tu Mercado Pago.
