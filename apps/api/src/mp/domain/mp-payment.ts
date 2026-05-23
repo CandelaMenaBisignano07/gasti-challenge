@@ -10,7 +10,7 @@ export interface MpPayment {
     | 'in_process'
     | 'in_mediation'
     | 'rejected'
-    | 'cancelled'
+    | 'canceled'
     | 'refunded'
     | 'charged_back';
   status_detail: string;
