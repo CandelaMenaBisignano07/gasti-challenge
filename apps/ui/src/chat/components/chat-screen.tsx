@@ -7,6 +7,7 @@ import { Header } from '@/chat/components/header';
 import { LandingHero } from '@/chat/components/landing-hero';
 import { MeshBackground } from '@/shared/mesh/mesh-background';
 import { useChat } from '@/chat/infrastructure/use-chat';
+import { useProactive } from '@/proactive/infrastructure/use-proactive';
 import type { BackfillRunSummary } from '@/mp/domain/mp-connection';
 
 type ChatScreenProps = {
@@ -16,10 +17,12 @@ type ChatScreenProps = {
 
 export function ChatScreen({ backfillSummary = null, onDismissBackfill }: ChatScreenProps = {}) {
   const { messages, status, streamingMessage, view, sendMessage, reset } = useChat();
-  // A pending backfill summary acts like an in-progress conversation: it
-  // forces the chat surface so the user sees the summary card immediately
-  // instead of the landing hero.
-  const isLanding = view === 'landing' && backfillSummary === null;
+  const { prompts } = useProactive();
+  // A pending backfill summary or a live proactive prompt both act like
+  // in-progress conversations: they force the chat surface so the card
+  // surfaces in real time, instead of being hidden behind the landing hero.
+  const isLanding =
+    view === 'landing' && backfillSummary === null && prompts.length === 0;
   const composerState = status === 'thinking' ? 'thinking' : 'idle';
   const threadMessages = streamingMessage ? [...messages, streamingMessage] : messages;
 
