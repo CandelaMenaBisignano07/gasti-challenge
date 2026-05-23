@@ -12,7 +12,12 @@ interface GatewayToolConfig<TInput extends ZodTypeAny, TOutput extends ZodTypeAn
   inputSchema: TInput;
   outputSchema: TOutput;
   call: (input: z.infer<TInput>, ctx: GatewayCtx) => Promise<z.infer<TOutput>>;
-  transform?: (output: z.infer<TOutput>) => unknown;
+  /**
+   * Map the gateway output to a UI attachment payload. Return `null` or
+   * `undefined` to suppress the attachment (e.g. empty list, no data) — the
+   * UI then renders only the agent's text.
+   */
+  transform?: (output: z.infer<TOutput>) => unknown | null | undefined;
 }
 
 /**
@@ -38,9 +43,9 @@ export function createGatewayTool<TInput extends ZodTypeAny, TOutput extends Zod
             display: {
               output: (ctx: ToolPayloadTransformContext) => {
                 const output = ctx.output;
-                // An error envelope has no domain shape to transform — pass it through.
-                if (isGatewayError(output)) return output;
-                return config.transform!(output as z.infer<TOutput>);
+                // Error envelope: no attachment.
+                if (isGatewayError(output)) return undefined;
+                return config.transform!(output as z.infer<TOutput>) ?? undefined;
               },
             },
           },
