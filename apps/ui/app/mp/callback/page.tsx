@@ -1,11 +1,11 @@
 'use client';
 
-import { useEffect } from 'react';
+import { Suspense, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { BackfillModal } from '@/mp/components/backfill-modal';
 import { useMpConnection } from '@/mp/infrastructure/use-mp-connection';
 
-export default function MpCallbackPage() {
+function MpCallbackInner() {
   const router = useRouter();
   const params = useSearchParams();
   const { refresh } = useMpConnection();
@@ -49,5 +49,13 @@ export default function MpCallbackPage() {
         router.replace('/');
       }}
     />
+  );
+}
+
+export default function MpCallbackPage() {
+  return (
+    <Suspense fallback={null}>
+      <MpCallbackInner />
+    </Suspense>
   );
 }
