@@ -39,5 +39,10 @@ export interface TransactionsRepository {
   reassignCategory(from: string, to: string): Promise<void>;
   getById(userId: string, id: string): Promise<Transaction | null>;
   findByMpPaymentId(userId: string, mpPaymentId: string): Promise<Transaction | null>;
-  updateStatus(id: string, newStatus: TransactionStatus, at: Date): Promise<void>;
+  updateStatus(
+    id: string,
+    newStatus: TransactionStatus,
+    newStatusDetail: string | null,
+    at: Date,
+  ): Promise<void>;
 }

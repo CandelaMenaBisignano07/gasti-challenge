@@ -104,13 +104,21 @@ export class JsonTransactionsRepository implements TransactionsRepository {
     return txs.find((t) => t.userId === userId && t.mpPaymentId === mpPaymentId) ?? null;
   }
 
-  async updateStatus(id: string, newStatus: TransactionStatus, at: Date): Promise<void> {
+  async updateStatus(
+    id: string,
+    newStatus: TransactionStatus,
+    newStatusDetail: string | null,
+    at: Date,
+  ): Promise<void> {
     const txs = await this.all();
     const index = txs.findIndex((t) => t.id === id);
     if (index === -1) return;
-    // A status change is a point-in-time event — stamp a full ISO timestamp,
-    // not a date-only string (consistent with PendingPrompt.resolvedAt).
-    txs[index] = { ...txs[index], status: newStatus, statusChangedAt: at.toISOString() };
+    txs[index] = {
+      ...txs[index],
+      status: newStatus,
+      statusDetail: newStatusDetail,
+      statusChangedAt: at.toISOString(),
+    };
     await this.store.write(txs);
   }
 }

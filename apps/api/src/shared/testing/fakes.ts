@@ -57,10 +57,15 @@ export function fakeTransactionsRepo(seed: Transaction[] = []): TransactionsRepo
     async findByMpPaymentId(userId, mpPaymentId) {
       return txs.find((t) => t.userId === userId && t.mpPaymentId === mpPaymentId) ?? null;
     },
-    async updateStatus(id, newStatus: TransactionStatus, at: Date) {
+    async updateStatus(id, newStatus, newStatusDetail, at: Date) {
       const i = txs.findIndex((t) => t.id === id);
       if (i === -1) return;
-      txs[i] = { ...txs[i], status: newStatus, statusChangedAt: at.toISOString() };
+      txs[i] = {
+        ...txs[i],
+        status: newStatus,
+        statusDetail: newStatusDetail,
+        statusChangedAt: at.toISOString(),
+      };
     },
   };
 }
