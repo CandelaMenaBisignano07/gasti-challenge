@@ -476,3 +476,101 @@ describe('BackfillMpPayments — happy path', () => {
     expect(classifyBatch.mock.calls[0][0].payments[0].id).toBe(2);
   });
 });
+
+describe('BackfillMpPayments — skip non-completed payments', () => {
+  test('drops rejected, pending, in_process, canceled, refunded, charged_back; ingests only isCompletedPayment', async () => {
+    const payments: MpPayment[] = [
+      payment({ id: 1 }), // approved + accredited + captured → ingest
+      payment({ id: 2, status: 'rejected', status_detail: 'cc_rejected_high_risk' }),
+      payment({ id: 3, status: 'pending', status_detail: 'pending_waiting_payment' }),
+      payment({ id: 4, status: 'in_process', status_detail: 'pending_review_manual' }),
+      payment({ id: 5, status: 'canceled', status_detail: 'by_payer' }),
+      payment({ id: 6, status: 'refunded', status_detail: 'refunded' }),
+      payment({ id: 7, status: 'charged_back', status_detail: 'in_process' }),
+      payment({ id: 8, captured: false }), // approved but not captured
+    ];
+
+    const searchResult: MpPaymentsSearchResult = {
+      results: payments,
+      truncated: false,
+      totalReported: payments.length,
+    };
+    const gateway = { search: mock(async () => searchResult) } as unknown as MpPaymentsSearchGateway;
+
+    const classifyBatch = mock(async () => [
+      { category: 'comida', suggestedDescription: 'Lunch', confidence: 0.9 },
+    ] satisfies Classification[]);
+    const batchClassifier = { classifyBatch } as unknown as BatchClassifier;
+
+    const create = mock(async (input: CreateTransactionInput): Promise<Transaction> => ({
+      id: `txn_${input.mpPaymentId ?? 'x'}`,
+      date: input.date,
+      amount: input.amount,
+      currency: 'ARS',
+      category: input.category,
+      description: input.description,
+      merchant: input.merchant,
+      userId: input.userId,
+      direction: input.direction,
+      status: input.status ?? 'active',
+      statusChangedAt: null,
+      statusDetail: null,
+      source: input.source,
+      mpPaymentId: input.mpPaymentId ?? null,
+      needsReview: input.needsReview ?? false,
+      operationType: input.operationType ?? null,
+      counterparty: input.counterparty ?? null,
+    }));
+    const transactions = {
+      create,
+      findByMpPaymentId: mock(async () => null),
+    } as unknown as TransactionsRepository;
+
+    const summaries = {
+      create: mock(async (): Promise<BackfillSummary> => ({
+        id: 'sum1',
+        userId: 'u1',
+        scope: '7d',
+        rangeBegin: new Date('2026-05-15T00:00:00.000Z'),
+        rangeEnd: new Date('2026-05-22T00:00:00.000Z'),
+        totalImported: 1,
+        byOperationType: { regular_payment: 1, money_transfer: 0, recurring_payment: 0, account_fund: 0 },
+        lowConfidenceCount: 0,
+        truncated: false,
+        status: 'visible',
+        createdAt: new Date('2026-05-22T00:00:00.000Z'),
+      })),
+    } as unknown as BackfillSummariesRepository;
+
+    const prompts = { findByMpPaymentId: mock(async () => null) } as unknown as PendingPromptsRepository;
+    const cursors = {
+      getByUserId: mock(async () => null),
+      upsert: mock(async () => {}),
+    } satisfies MpPollCursorsRepository;
+
+    const users = { getById: mock(async () => user) } as unknown as UsersRepository;
+    const refresh = { execute: mock(async () => 'tok') } as unknown as RefreshMpToken;
+    const clock: Clock = { now: () => new Date('2026-05-22T00:00:00.000Z') };
+
+    const uc = new BackfillMpPayments(
+      users,
+      cursors,
+      gateway,
+      batchClassifier,
+      transactions,
+      summaries,
+      prompts,
+      { lookupNickname: async () => null },
+      refresh,
+      clock,
+    );
+
+    const result = await uc.execute({ userId: 'u1', scope: '7d' });
+
+    // Only payment id=1 (the lone approved+accredited+captured one) is ingested.
+    expect(create.mock.calls).toHaveLength(1);
+    expect(create.mock.calls[0][0].mpPaymentId).toBe('1');
+    expect(result.totalImported).toBe(1);
+    expect(classifyBatch.mock.calls[0][0].payments).toHaveLength(1);
+  });
+});

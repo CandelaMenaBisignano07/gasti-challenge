@@ -43,6 +43,7 @@ import {
   normalizeOperationType,
   type OperationType,
 } from '../domain/operation-type';
+import { isCompletedPayment } from '../domain/is-completed-payment';
 import type { MpPayment } from '../domain/mp-payment';
 import { merchantOf, payerNameOf, paymentDirection } from '../domain/mp-payment-extract';
 import { RefreshMpToken } from './refresh-mp-token.use-case';
@@ -114,8 +115,15 @@ export class BackfillMpPayments {
       endDate: end,
     });
 
-    // Drop `account_fund` (internal wallet top-ups) before doing any work.
-    const filtered = results.filter((p) => isAcceptedOperationType(p.operation_type));
+    // Drop `account_fund` (internal wallet top-ups) and any payment that is
+    // not a completed movement (rejected, pending, in_process, canceled,
+    // refunded, charged_back, authorized-but-uncaptured, etc.). Mirroring the
+    // gate used by ProcessMpEvent BRANCH 3 keeps the two pipelines consistent
+    // and prevents non-events (e.g., fraud-rejected charges) from ever
+    // appearing as `active` transactions in Gasti.
+    const filtered = results.filter(
+      (p) => isAcceptedOperationType(p.operation_type) && isCompletedPayment(p),
+    );
 
     // Dedupe against existing transactions — backfilling a window already
     // partially covered by the cron poller (or running backfill twice) must
