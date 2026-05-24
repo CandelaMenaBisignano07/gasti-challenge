@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { createJsonStore, type JsonStore } from '../../shared/providers/json-store';
-import { TRANSACTIONS_FILE } from '../../shared/providers/paths';
+import { transactionsFile } from '../../shared/providers/paths';
 import {
   transactionSchema,
   type Transaction,
@@ -14,7 +14,7 @@ import type {
 
 @Injectable()
 export class JsonTransactionsRepository implements TransactionsRepository {
-  private readonly store: JsonStore<unknown[]> = createJsonStore<unknown[]>(TRANSACTIONS_FILE, []);
+  private readonly store: JsonStore<unknown[]> = createJsonStore<unknown[]>(transactionsFile(), []);
 
   // Normalize-on-read: every raw row is parsed through transactionSchema, so the
   // checked-in 7-field data/transactions.json upgrades to the 13-field shape in
