@@ -14,8 +14,8 @@ export function buildGastiMemory() {
     vector: buildMastraVector(),
     embedder: new ModelRouterEmbeddingModel('openai/text-embedding-3-small'),
     options: {
-      lastMessages: 20,
-      semanticRecall: { topK: 3, messageRange: 2, scope: 'resource' },
+      lastMessages: 10,
+      semanticRecall: { topK: 2, messageRange: 2, scope: 'resource' },
       workingMemory: {
         enabled: true,
         schema: workingMemorySchema,

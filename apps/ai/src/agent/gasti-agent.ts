@@ -13,7 +13,7 @@ export function makeGastiAgent({ tools, memory }: GastiAgentDeps) {
   return new Agent({
     id: 'gasti',
     name: 'Gasti',
-    model: 'openai/gpt-4o',
+    model: 'openai/gpt-4o-mini',
     instructions: async ({ requestContext }) => buildInstructions(requestContext as RequestContext),
     requestContextSchema: z.object({
       today: z.string(),
