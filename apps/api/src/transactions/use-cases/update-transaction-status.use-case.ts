@@ -7,13 +7,22 @@ import { CLOCK, type Clock } from '../../shared/providers/clock';
 import type { TransactionStatus } from '../../shared/domain/transaction';
 
 @Injectable()
-export class MarkTransactionReversed {
+export class UpdateTransactionStatus {
   constructor(
     @Inject(TRANSACTIONS_REPOSITORY) private readonly repo: TransactionsRepository,
     @Inject(CLOCK) private readonly clock: Clock,
   ) {}
 
-  async execute(input: { transactionId: string; newStatus: TransactionStatus }): Promise<void> {
-    await this.repo.updateStatus(input.transactionId, input.newStatus, this.clock.now());
+  async execute(input: {
+    transactionId: string;
+    newStatus: TransactionStatus;
+    newStatusDetail: string | null;
+  }): Promise<void> {
+    await this.repo.updateStatus(
+      input.transactionId,
+      input.newStatus,
+      input.newStatusDetail,
+      this.clock.now(),
+    );
   }
 }

@@ -1,6 +1,6 @@
 import { test, expect } from 'bun:test';
 import { ProcessMpEvent } from './process-mp-event.use-case';
-import { MarkTransactionReversed } from '../../transactions/use-cases/mark-transaction-reversed.use-case';
+import { UpdateTransactionStatus } from '../../transactions/use-cases/update-transaction-status.use-case';
 import { fakeTransactionsRepo, fixedClock } from '../../shared/testing/fakes';
 import type { User } from '../../users/domain/user';
 import type { MpPayment } from '../domain/mp-payment';
@@ -187,7 +187,7 @@ function build(opts: {
     promptsRepo.repo,
     bus.bus,
     fakeUserLookup,
-    new MarkTransactionReversed(txRepo, fixedClock('2026-05-18')),
+    new UpdateTransactionStatus(txRepo, fixedClock('2026-05-18')),
     fixedClock('2026-05-18'),
   );
   return {

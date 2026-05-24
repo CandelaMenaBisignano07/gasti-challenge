@@ -5,7 +5,7 @@ import { AddTransaction } from './use-cases/add.use-case';
 import { UpdateTransaction } from './use-cases/update.use-case';
 import { DeleteTransaction } from './use-cases/delete.use-case';
 import { ProposeTransactionMutation } from './use-cases/propose-mutation.use-case';
-import { MarkTransactionReversed } from './use-cases/mark-transaction-reversed.use-case';
+import { UpdateTransactionStatus } from './use-cases/update-transaction-status.use-case';
 import { TransactionsController } from './interface/transactions.controller';
 import { TRANSACTION_CLASSIFIER } from '../categorization/domain/transaction-classifier';
 import { HttpTransactionClassifier } from '../categorization/providers/http-transaction-classifier';
@@ -21,7 +21,7 @@ import { JsonDefaultCategoryOverridesRepository } from '../categorization/reposi
     UpdateTransaction,
     DeleteTransaction,
     ProposeTransactionMutation,
-    MarkTransactionReversed,
+    UpdateTransactionStatus,
     {
       provide: DEFAULT_CATEGORY_OVERRIDES_REPOSITORY,
       useFactory: () => new JsonDefaultCategoryOverridesRepository(),
@@ -29,6 +29,6 @@ import { JsonDefaultCategoryOverridesRepository } from '../categorization/reposi
     CategoryDescriptionResolver,
     { provide: TRANSACTION_CLASSIFIER, useClass: HttpTransactionClassifier },
   ],
-  exports: [TRANSACTIONS_REPOSITORY, MarkTransactionReversed, AddTransaction],
+  exports: [TRANSACTIONS_REPOSITORY, UpdateTransactionStatus, AddTransaction],
 })
 export class TransactionsModule {}

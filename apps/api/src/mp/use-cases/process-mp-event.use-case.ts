@@ -4,7 +4,7 @@ import {
   TRANSACTIONS_REPOSITORY,
   type TransactionsRepository,
 } from '../../transactions/domain/transactions.repository';
-import { MarkTransactionReversed } from '../../transactions/use-cases/mark-transaction-reversed.use-case';
+import { UpdateTransactionStatus } from '../../transactions/use-cases/update-transaction-status.use-case';
 import {
   PENDING_PROMPTS_REPOSITORY,
   type PendingPromptsRepository,
@@ -54,7 +54,7 @@ export class ProcessMpEvent {
     @Inject(PENDING_PROMPTS_REPOSITORY) private readonly prompts: PendingPromptsRepository,
     @Inject(PROACTIVE_EVENT_BUS) private readonly bus: ProactiveEventBus,
     @Inject(MP_USER_LOOKUP_GATEWAY) private readonly userLookup: MpUserLookupGateway,
-    private readonly markReversed: MarkTransactionReversed,
+    private readonly updateStatus: UpdateTransactionStatus,
     @Inject(CLOCK) private readonly clock: Clock,
   ) {}
 
@@ -67,7 +67,7 @@ export class ProcessMpEvent {
     if (existingTx) {
       if (newStatus === existingTx.status) return; // idempotent: nothing changed.
 
-      await this.markReversed.execute({ transactionId: existingTx.id, newStatus });
+      await this.updateStatus.execute({ transactionId: existingTx.id, newStatus, newStatusDetail: payment.status_detail });
 
       const noticeReason: NoticeReason =
         newStatus === 'charged_back' ? 'mp_chargeback' : 'mp_refund';
