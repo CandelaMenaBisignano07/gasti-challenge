@@ -2,6 +2,11 @@ import { createGatewayTool } from '../../shared/interface/create-gateway-tool';
 import * as s from '../domain/categorization.gateway';
 import type { CategorizationGateway } from '../domain/categorization.gateway';
 
+function capitalize(text: string): string {
+  if (!text) return text;
+  return text.charAt(0).toUpperCase() + text.slice(1);
+}
+
 export function makeCategorizationTools(gateway: CategorizationGateway) {
   return {
     overrideMerchantCategory: createGatewayTool({
@@ -48,6 +53,17 @@ export function makeCategorizationTools(gateway: CategorizationGateway) {
       inputSchema: s.listCategoriesInput,
       outputSchema: s.listCategoriesResult,
       call: (i, c) => gateway.list(i, c),
+      transform: (output) =>
+        output.categories.length === 0
+          ? null
+          : {
+              kind: 'bulletList',
+              items: output.categories.map((c) => ({
+                label: capitalize(c.name),
+                sub: c.description || (c.isCustom ? 'Categoría personalizada' : 'Sin descripción'),
+                icon: c.name,
+              })),
+            },
     }),
     proposeCategoryChange: createGatewayTool({
       id: 'proposeCategoryChange',
@@ -56,6 +72,25 @@ export function makeCategorizationTools(gateway: CategorizationGateway) {
       inputSchema: s.proposeCategoryChangeInput,
       outputSchema: s.proposeCategoryChangeResult,
       call: (i, c) => gateway.propose(i, c),
+      transform: (output) => {
+        const isDelete = output.intent === 'delete';
+        const confirmLabel = isDelete ? 'Sí, borrala' : 'Sí, renombrala';
+        const target = isDelete
+          ? `delete:${output.name}`
+          : `rename:${output.name}:${output.newName ?? ''}`;
+        const affected = output.affectedTransactionCount;
+        const caption = isDelete
+          ? `Afecta ${affected} ${affected === 1 ? 'transacción' : 'transacciones'} (volverán a "otros")`
+          : `Afecta ${affected} ${affected === 1 ? 'transacción' : 'transacciones'} · renombrar a "${output.newName ?? ''}"`;
+        return {
+          kind: 'optionPills',
+          options: [
+            { id: `confirm:${target}`, label: confirmLabel, intent: 'confirm' },
+            { id: 'cancel', label: 'Cancelar', intent: 'cancel' },
+          ],
+          caption,
+        };
+      },
     }),
     updateCategoryDescription: createGatewayTool({
       id: 'updateCategoryDescription',
