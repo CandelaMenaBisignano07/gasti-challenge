@@ -1,6 +1,10 @@
 export type PendingPromptKind = 'income' | 'expense';
 export type PendingPromptIntent = 'confirm' | 'notice';
-export type PendingPromptNoticeReason = 'mp_refund' | 'mp_chargeback';
+export type PendingPromptNoticeReason =
+  | 'mp_refund'
+  | 'mp_chargeback'
+  | 'mp_cancellation'
+  | 'mp_chargeback_reimbursed';
 export type PendingPromptStatus = 'pending' | 'added' | 'discarded' | 'auto';
 
 export type PendingPrompt = {

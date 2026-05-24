@@ -1,7 +1,7 @@
 import type { Category } from '@/shared/theme/tokens';
 
 export type TransactionDirection = 'income' | 'expense';
-export type TransactionStatus = 'active' | 'refunded' | 'charged_back';
+export type TransactionStatus = 'active' | 'refunded' | 'charged_back' | 'canceled';
 export type TransactionSource = 'manual' | 'mercadopago';
 export type TransactionOperationType =
   | 'regular_payment'

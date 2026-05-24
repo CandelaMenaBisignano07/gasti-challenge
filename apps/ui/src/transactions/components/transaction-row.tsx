@@ -15,6 +15,7 @@ const STATUS_LABEL: Record<TransactionStatus, string> = {
   active: '',
   refunded: 'Reembolsada',
   charged_back: 'Contracargo',
+  canceled: 'Cancelada',
 };
 
 const OPERATION_LABEL: Record<TransactionOperationType, string> = {
