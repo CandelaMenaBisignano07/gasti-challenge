@@ -293,14 +293,4 @@ cliente — la decisión actual fue mantenerlo simple.
 ---
 
 ## Loom
-
-<!--
-Cómo reemplazar este placeholder:
-1. Abrí este PR en GitHub.
-2. En el cuadro de comentarios, arrastrá el archivo .mp4. GitHub lo sube y
-   te devuelve una URL del tipo https://github.com/user-attachments/assets/<id>.
-3. Reemplazá `REPLACE_WITH_GITHUB_USER_ATTACHMENT_URL` por esa URL.
-4. Commiteá y mergeá.
--->
-
-<video src="REPLACE_WITH_GITHUB_USER_ATTACHMENT_URL" controls width="800"></video>
+<video src="https://github.com/user-attachments/assets/d9534bcc-a746-4eea-aec8-7a33f2573188" controls width="800"></video>
