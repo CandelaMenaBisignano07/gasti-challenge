@@ -293,3 +293,4 @@ cliente — la decisión actual fue mantenerlo simple.
 ---
 
 ## Loom
+<video src="https://github.com/user-attachments/assets/d9534bcc-a746-4eea-aec8-7a33f2573188" controls width="800"></video>
