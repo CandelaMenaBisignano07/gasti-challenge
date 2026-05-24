@@ -36,7 +36,7 @@ export function BackfillModal({ onDone }: BackfillModalProps) {
 
   return (
     <div className="fixed inset-0 z-50 grid place-items-center bg-black/40 backdrop-blur-sm p-s4">
-      <Card variant="frosted" radius="lg" className="w-full max-w-[460px] p-s5">
+      <Card variant="frosted" radius="lg" className="w-full max-w-[460px] p-s5 animate-message-enter">
         <h2 className="font-display text-[18px] font-medium text-ink-1">
           ¿Importamos tus pagos recientes?
         </h2>

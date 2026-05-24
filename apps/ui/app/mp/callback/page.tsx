@@ -4,6 +4,7 @@ import { Suspense, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { BackfillModal } from '@/mp/components/backfill-modal';
 import { useMpConnection } from '@/mp/infrastructure/use-mp-connection';
+import { MeshBackground } from '@/shared/mesh/mesh-background';
 
 function MpCallbackInner() {
   const router = useRouter();
@@ -37,18 +38,21 @@ function MpCallbackInner() {
   }
 
   return (
-    <BackfillModal
-      onDone={(summary) => {
-        if (summary) {
-          try {
-            sessionStorage.setItem('gasti-backfill-pending', JSON.stringify(summary));
-          } catch {
-            // SSR / disabled storage — fall through; the card just doesn't appear.
+    <>
+      <MeshBackground />
+      <BackfillModal
+        onDone={(summary) => {
+          if (summary) {
+            try {
+              sessionStorage.setItem('gasti-backfill-pending', JSON.stringify(summary));
+            } catch {
+              // SSR / disabled storage — fall through; the card just doesn't appear.
+            }
           }
-        }
-        router.replace('/');
-      }}
-    />
+          router.replace('/');
+        }}
+      />
+    </>
   );
 }
 
