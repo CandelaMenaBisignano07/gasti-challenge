@@ -41,7 +41,7 @@ bun run build             # build de las tres (Turbo)
 **Tests** (use-cases de `apps/api`):
 
 ```bash
-cd apps/api && bun test    # 201 tests — proyección, overrides, insights, mutaciones, MP polling y backfill
+cd apps/api && bun test    # 198 tests — proyección, overrides, insights, mutaciones, MP polling y backfill
 ```
 
 > Para probar el polling de Mercado Pago en local hay que crear una app en el panel de MP
