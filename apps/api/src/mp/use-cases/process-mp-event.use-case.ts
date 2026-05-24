@@ -21,7 +21,7 @@ import {
   type MpUserLookupGateway,
 } from '../domain/mp-user-lookup.gateway';
 import { isCompletedPayment } from '../domain/is-completed-payment';
-import { mapMpStatusToTransactionStatus } from '../domain/map-mp-status';
+import { classifyMpStatusChange } from '../domain/classify-mp-status-change';
 import { normalizeOperationType } from '../domain/operation-type';
 import type { MpPayment } from '../domain/mp-payment';
 import {
@@ -61,25 +61,31 @@ export class ProcessMpEvent {
   async execute({ payment, user }: ProcessMpEventInput): Promise<void> {
     const paymentId = String(payment.id);
     const existingTx = await this.transactions.findByMpPaymentId(user.id, paymentId);
-    const newStatus = mapMpStatusToTransactionStatus(payment.status);
+    const change = classifyMpStatusChange(payment);
 
     // BRANCH 1 — the payment already exists as a transaction.
     if (existingTx) {
-      if (newStatus === existingTx.status) return; // idempotent: nothing changed.
+      if (!change) return;
+      if (
+        change.newTransactionStatus === existingTx.status &&
+        change.newStatusDetail === existingTx.statusDetail
+      ) return;
 
-      await this.updateStatus.execute({ transactionId: existingTx.id, newStatus, newStatusDetail: payment.status_detail });
+      await this.updateStatus.execute({
+        transactionId: existingTx.id,
+        newStatus: change.newTransactionStatus,
+        newStatusDetail: change.newStatusDetail,
+      });
 
-      const noticeReason: NoticeReason =
-        newStatus === 'charged_back' ? 'mp_chargeback' : 'mp_refund';
       const notice = await this.prompts.create(
         this.draftPrompt({
           userId: user.id,
-          mpPaymentId: `${paymentId}:reversal`,
+          mpPaymentId: `${paymentId}:${change.noticeReason}`,
           kind: existingTx.direction,
           payment,
           intent: 'notice',
           status: 'auto',
-          noticeReason,
+          noticeReason: change.noticeReason,
           suggestedCategory: existingTx.category,
           suggestedDescription: existingTx.description,
           merchant: existingTx.merchant,
@@ -93,18 +99,14 @@ export class ProcessMpEvent {
 
     // BRANCH 2 — no transaction and the payment is not completed.
     if (!isCompletedPayment(payment)) {
-      const pending = await this.prompts.findByMpPaymentId(user.id, paymentId);
-      if (
-        pending &&
-        (payment.status === 'refunded' || payment.status === 'charged_back')
-      ) {
-        const reason: NoticeReason =
-          payment.status === 'charged_back' ? 'mp_chargeback' : 'mp_refund';
-        await this.prompts.markDiscarded(pending.id, reason);
-        const updated = await this.prompts.getById(user.id, pending.id);
-        if (updated) this.bus.publish(user.id, updated);
+      if (change?.invalidatesPrompt) {
+        const pending = await this.prompts.findByMpPaymentId(user.id, paymentId);
+        if (pending) {
+          await this.prompts.markDiscarded(pending.id, change.noticeReason);
+          const updated = await this.prompts.getById(user.id, pending.id);
+          if (updated) this.bus.publish(user.id, updated);
+        }
       }
-      // Otherwise drop (still pending / authorized / rejected).
       return;
     }
 

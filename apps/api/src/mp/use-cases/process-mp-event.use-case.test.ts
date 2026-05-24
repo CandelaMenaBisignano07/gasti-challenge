@@ -163,6 +163,7 @@ function makeTx(overrides: Partial<Transaction> = {}): Transaction {
     direction: 'expense',
     status: 'active',
     statusChangedAt: null,
+    statusDetail: null,
     source: 'mercadopago',
     mpPaymentId: 'PAY_1',
     ...overrides,
@@ -255,7 +256,7 @@ test('Branch 1: reversal of an existing tx → updateStatus + auto/notice prompt
   expect(rows[0].intent).toBe('notice');
   expect(rows[0].status).toBe('auto');
   expect(rows[0].noticeReason).toBe('mp_refund');
-  expect(rows[0].mpPaymentId).toBe('PAY_1:reversal');
+  expect(rows[0].mpPaymentId).toBe('PAY_1:mp_refund');
 
   expect(bus.published).toHaveLength(1);
   expect(bus.published[0].intent).toBe('notice');
@@ -328,4 +329,121 @@ test('Idempotency: duplicate mpPaymentId already pending → no second prompt', 
   expect(promptsRepo.rows()).toHaveLength(1);
   expect(bus.published).toHaveLength(0);
   expect(classifier.calls).toHaveLength(0);
+});
+
+test('Branch 1: canceled flips an existing active tx to canceled and publishes mp_cancellation notice', async () => {
+  const { useCase, txRepo, promptsRepo, bus, user, payment } = build({
+    user: makeUser(),
+    payment: makePayment({ status: 'canceled', status_detail: 'by_payer' }),
+    txs: [makeTx()],
+  });
+
+  await useCase.execute({ payment, user });
+
+  const tx = await txRepo.getById('default-user', 'txn_001');
+  expect(tx?.status).toBe('canceled');
+  expect(tx?.statusDetail).toBe('by_payer');
+
+  const rows = promptsRepo.rows();
+  expect(rows).toHaveLength(1);
+  expect(rows[0].intent).toBe('notice');
+  expect(rows[0].noticeReason).toBe('mp_cancellation');
+  expect(rows[0].mpPaymentId).toBe('PAY_1:mp_cancellation');
+
+  expect(bus.published).toHaveLength(1);
+  expect(bus.published[0].noticeReason).toBe('mp_cancellation');
+});
+
+test('Branch 1: charged_back+reimbursed flips a charged_back tx back to active with mp_chargeback_reimbursed notice', async () => {
+  const { useCase, txRepo, promptsRepo, bus, user, payment } = build({
+    user: makeUser(),
+    payment: makePayment({ status: 'charged_back', status_detail: 'reimbursed' }),
+    txs: [makeTx({ status: 'charged_back', statusDetail: 'in_process' })],
+  });
+
+  await useCase.execute({ payment, user });
+
+  const tx = await txRepo.getById('default-user', 'txn_001');
+  expect(tx?.status).toBe('active');
+  expect(tx?.statusDetail).toBe('reimbursed');
+
+  const rows = promptsRepo.rows();
+  expect(rows).toHaveLength(1);
+  expect(rows[0].noticeReason).toBe('mp_chargeback_reimbursed');
+  expect(rows[0].mpPaymentId).toBe('PAY_1:mp_chargeback_reimbursed');
+
+  expect(bus.published).toHaveLength(1);
+});
+
+test('Branch 1: idempotent on (status, statusDetail) tuple — same tuple → no notice', async () => {
+  const { useCase, promptsRepo, bus, user, payment } = build({
+    user: makeUser(),
+    payment: makePayment({ status: 'charged_back', status_detail: 'in_process' }),
+    txs: [makeTx({ status: 'charged_back', statusDetail: 'in_process' })],
+  });
+
+  await useCase.execute({ payment, user });
+
+  expect(promptsRepo.rows()).toHaveLength(0);
+  expect(bus.published).toHaveLength(0);
+});
+
+test('Branch 1: same status but different statusDetail still emits a chargeback notice', async () => {
+  const { useCase, txRepo, promptsRepo, user, payment } = build({
+    user: makeUser(),
+    payment: makePayment({ status: 'charged_back', status_detail: 'settled' }),
+    txs: [makeTx({ status: 'charged_back', statusDetail: 'in_process' })],
+  });
+
+  await useCase.execute({ payment, user });
+
+  const tx = await txRepo.getById('default-user', 'txn_001');
+  expect(tx?.status).toBe('charged_back');
+  expect(tx?.statusDetail).toBe('settled');
+  expect(promptsRepo.rows()[0].noticeReason).toBe('mp_chargeback');
+  expect(promptsRepo.rows()[0].mpPaymentId).toBe('PAY_1:mp_chargeback');
+});
+
+test('Branch 2: canceled payment discards a pending prompt with mp_cancellation', async () => {
+  const { useCase, promptsRepo, bus, user, payment } = build({
+    user: makeUser(),
+    payment: makePayment({ status: 'canceled', status_detail: 'expired' }),
+    prompts: [makePrompt()],
+  });
+
+  await useCase.execute({ payment, user });
+
+  const rows = promptsRepo.rows();
+  expect(rows).toHaveLength(1);
+  expect(rows[0].status).toBe('discarded');
+  expect(rows[0].noticeReason).toBe('mp_cancellation');
+
+  expect(bus.published).toHaveLength(1);
+  expect(bus.published[0].status).toBe('discarded');
+});
+
+test('Branch 2: charged_back+reimbursed does not touch a pending prompt', async () => {
+  const { useCase, promptsRepo, bus, user, payment } = build({
+    user: makeUser(),
+    payment: makePayment({ status: 'charged_back', status_detail: 'reimbursed' }),
+    prompts: [makePrompt()],
+  });
+
+  await useCase.execute({ payment, user });
+
+  expect(promptsRepo.rows()[0].status).toBe('pending');
+  expect(bus.published).toHaveLength(0);
+});
+
+test('Branch 2: in_process payment does not discard a pending prompt', async () => {
+  const { useCase, promptsRepo, bus, user, payment } = build({
+    user: makeUser(),
+    payment: makePayment({ status: 'in_process', status_detail: 'pending_review_manual' }),
+    prompts: [makePrompt()],
+  });
+
+  await useCase.execute({ payment, user });
+
+  expect(promptsRepo.rows()[0].status).toBe('pending');
+  expect(bus.published).toHaveLength(0);
 });
