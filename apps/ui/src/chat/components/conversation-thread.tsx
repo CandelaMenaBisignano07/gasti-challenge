@@ -62,7 +62,7 @@ export function ConversationThread({
       });
     });
     return () => cancelAnimationFrame(id);
-  }, [items.length, pending]);
+  }, [items.length, pending, backfillSummary]);
 
   return (
     <div
@@ -71,12 +71,6 @@ export function ConversationThread({
       aria-atomic="false"
       className="flex flex-col gap-s7 py-s6"
     >
-      {backfillSummary && (
-        <BackfillSummaryCard
-          summary={backfillSummary}
-          onDismiss={onDismissBackfill ?? (() => {})}
-        />
-      )}
       {items.map((item) => {
         if (item.type === 'message') {
           return item.message.role === 'user' ? (
@@ -92,6 +86,12 @@ export function ConversationThread({
         );
       })}
       {pending && <ThinkingIndicator />}
+      {backfillSummary && (
+        <BackfillSummaryCard
+          summary={backfillSummary}
+          onDismiss={onDismissBackfill ?? (() => {})}
+        />
+      )}
     </div>
   );
 }
