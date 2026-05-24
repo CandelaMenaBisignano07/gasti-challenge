@@ -20,9 +20,11 @@ Gasti is a 100% conversational assistant that wraps the user's transaction set w
 
 1. **Ad-hoc Q&A over the spending** — answer any question that can be derived from the data: totals, breakdowns, comparisons, top merchants, filtered lookups. The conversational floor.
 2. **Proactive insights** — surface patterns the user didn't ask about: end-of-month projection at minimum, with additional insight surfaces decided in the implementation plan.
-3. **Budget coaching** — let the user set monthly budgets per category through conversation, remember them across sessions, report progress on request, and warn proactively when a category is on track to overrun.
+3. **Budget & goals coaching** — let the user set monthly budgets per category and longer-horizon savings goals through conversation, remember them across sessions, report progress on request, warn proactively when a category is on track to overrun, and assess whether a recent spending pattern puts a goal at risk.
 
-Cross-cutting capabilities support all three: the user can correct categorizations (per-merchant or per-transaction), declare income (recurring or one-off), and create / update / delete transactions through conversation. Every interaction is bilingual — Gasti replies in whichever language the user wrote in.
+Cross-cutting capabilities support all three: the user can correct categorizations (per-merchant or per-transaction), declare income (recurring or one-off), create / update / delete transactions through conversation, and create / rename / delete / describe their own categories beyond the seven defaults. Every interaction is bilingual — Gasti replies in whichever language the user wrote in.
+
+When a connected source (e.g. Mercado Pago) reports a new payment or a status change on a past payment, Gasti surfaces it in the open chat as an editable card. The user resolves it from the conversation; Gasti never delivers via push notification, email, or any out-of-session channel.
 
 ## User Stories
 
@@ -61,6 +63,16 @@ Cross-cutting capabilities support all three: the user can correct categorizatio
 33. As a user, I want to interact through a simple chat UI (no forms, no buttons, no setup wizard), so that the experience matches the promise of "ask anything".
 34. As a developer extending Gasti, I want clear architectural boundaries (use-cases, repositories, providers, Mastra tools as a thin layer over use-cases), so that I can add a new tool without touching unrelated layers.
 35. As a developer reviewing Gasti, I want every business rule to live in a use-case (not in a controller, not in a Next route, not inside a Mastra tool's `execute`), so that the code reads as a series of intents.
+36. As a user, I want to set a savings goal ("quiero juntar 500.000 para Bariloche") through conversation, so that I have a target beyond just monthly budgets.
+37. As a user, I want to ask "¿cómo voy con la meta de Bariloche?" and get current progress, so that I can see if I'm on track.
+38. As a user, I want Gasti to flag when my recent discretionary spending pattern likely delays an active goal, so that I can correct course without being nagged.
+39. As a user, I want to create a custom category beyond the seven defaults ("crypto", "rituales del finde"), so that the way I track my spending matches how I actually think about it.
+40. As a user, I want to attach a short description to a custom category, so that Gasti and its classifier know what kinds of merchants belong in it.
+41. As a user, I want to connect my Mercado Pago account once via OAuth, so that real movements appear in the chat without me having to type them.
+42. As a user, when I first connect Mercado Pago I want the option to import the last 24h / 7d / 15d / 30d of payments (or skip), so that my chat has history to ask about right away.
+43. As a user, I want each new payment Gasti detects from Mercado Pago to arrive as an editable card in the chat (right category? right description?), so that I have one place to keep the record clean.
+44. As a user, when a Mercado Pago payment is later canceled or reimbursed via chargeback, I want Gasti to surface that status change as a notice in the chat, so that my history reflects what actually happened.
+45. As a user, I want Gasti to never push me notifications, emails, or out-of-session alerts, so that it stays a tool I open, not a tool that interrupts me.
 
 ## Implementation Decisions
 
@@ -77,16 +89,17 @@ These are architectural / product-domain decisions. Concrete file paths, tool na
 
 - **Use Mastra primitives only.** `Agent`, `createTool` (with Zod `inputSchema` / `outputSchema`), `Workflow` where genuinely warranted, and `Memory` for state. Custom tool-calling loops, hand-rolled agent runners, or homemade abstractions over Mastra are explicitly forbidden.
 - **Memory model:** `workingMemory` (per user/thread template) + `semanticRecall` (vector retrieval with topK + a small messageRange) + `lastMessages` (short-term chat history). Exact tuning (window sizes, topK, schemas) is set in the implementation plan.
-- **Working-memory contents:** monthly budgets keyed by category; categorization overrides at two granularities (per-merchant rule and per-transaction exception); income statements (recurring monthly figure and a small list of one-offs); user preferences (display name, language hint override).
+- **Working-memory contents:** a **mirror** (not source of truth) of the state Gasti wants in the agent's context for cheap proactivity — monthly budgets keyed by category, active savings goals, recurring income figure, and user preferences (display name, language hint override). The authoritative copies live in the API-side repositories. Categorization overrides are not mirrored in working memory; they apply at aggregation time inside `apps/api`.
 - **Storage adapter:** a Mastra-supported local adapter (likely `@mastra/libsql`) chosen in the plan. The agent layer never knows the adapter brand.
 - **Tools wrap use-cases.** A tool's `execute` calls a use-case, never a repository directly. Tool layer = boundary; work happens inside use-cases.
 
 ### Data model
 
-- **Transactions** live behind a `TransactionsRepository` interface in the `transactions` feature. The seed implementation reads from `data/transactions.json`. Schema is fixed: `id, date (ISO yyyy-MM-dd), amount (positive ARS number), currency ("ARS"), category, description, merchant`. Categories in the seed: `comida, transporte, entretenimiento, salud, servicios, educacion, otros`.
+- **Transactions** live behind a `TransactionsRepository` interface in the `transactions` feature. The seed implementation reads from `data/transactions.json`. Schema: `id, date (ISO yyyy-MM-dd), amount (positive ARS number), currency ("ARS"), category, description, merchant, direction ("income" | "expense"), status ("active" | "canceled" | "reimbursed"), statusDetail (free-form, optional), source ("manual" | "mercadopago"), mpPaymentId (optional, unique when present), counterparty (optional, payer/recipient name), operationType (optional, MP-side classifier: "regular_payment" | "money_transfer" | "recurring_payment"), needsReview (boolean, true when a classifier landed it in "otros" with low confidence)`. Seed categories: `comida, transporte, entretenimiento, salud, servicios, educacion, otros`. The data model is **multi-tenant-ready** (every row carries `userId`) even though v1 ships with a single `default-user`.
 - **Transactions are mutable through conversation.** Add / edit / delete operations are first-class use-cases and exposed as Mastra tools (specific tool list deferred to the plan). The persistence shape (rewrite JSON, sidecar mutations file, dedicated store) is an implementation-plan call.
-- **Budgets, income statements, and categorization overrides** live in working memory, not in a relational store. They are domain entities with their own use-cases (`SetBudget`, `GetBudgetProgress`, `AddIncomeEntry`, `OverrideMerchantCategory`, `OverrideTransactionCategory`, etc. — exact names finalized in the plan).
-- **Aggregations honor overrides.** When computing totals/breakdowns, the categorization resolution order is: transaction-level override → merchant-level override → seed category.
+- **Budgets, income statements, categorization overrides, savings goals, and user-owned categories** live in their own JSON repositories under `apps/api/data/` (one file per feature). The working memory in Mastra mirrors a subset of this state for the agent's context; the API repos are the source of truth.
+- **User-owned categories carry a semantic description.** Beyond the 7 seed categories, the user can create / rename / delete / describe categories. The description is what tells the agent (and the MP payment classifier) what kinds of merchants belong in that category — a custom `"rituales del finde"` is only as good as the description.
+- **Aggregations honor overrides.** When computing totals/breakdowns, the categorization resolution order is: transaction-level override → merchant-level override → seed/user category on the transaction.
 
 ### Conversation, language, and rendering
 
@@ -106,33 +119,27 @@ These are architectural / product-domain decisions. Concrete file paths, tool na
 
 ## Testing Decisions
 
-The brief explicitly states: *"No miramos: code style, arquitectura tipo libro, performance, tests."* Tests are therefore **not a deliverable**.
-
-If the candidate chooses to write tests anyway (e.g., for confidence on insight math, projection logic, or override resolution), the guidance is:
-
-- **Test external behavior of use-cases**, not implementation details. A use-case has a clear input/output contract; test that. Do not test that a specific repository method was called N times.
-- **Don't test Mastra tools directly.** A tool is a thin shell over a use-case; testing the use-case covers the meaningful logic.
-- **Don't test the agent itself.** LLM output is non-deterministic; testing it produces flaky suites and false confidence.
-- **Prior art:** none in this codebase yet. The first test file should set the pattern (likely Vitest or Bun's test runner — chosen in the plan if tests are written).
+`apps/api` ships with a `bun:test` suite covering use-cases, override resolution, projection / insight math, mutation gating, and the MP polling + backfill paths. Tests target the external behavior of use-cases — not Mastra tools (thin shells), not the agent itself (non-deterministic LLM output).
 
 ## Out of Scope
 
 The following are explicit non-goals for v1. Anything not listed elsewhere as in-scope is out.
 
-- **Multi-user, accounts, auth, login.** Single user, single thread.
-- **Real bank integrations.** No Plaid, no OFX, no CSV upload, no screen-scraping.
+- **Multi-user UX, accounts, auth, login.** v1 ships with a single user (`default-user`) and a single thread. The data model already carries `userId` on every row so the path to multi-user is a UI / auth layer, not a schema migration.
+- **Connected sources beyond Mercado Pago.** Mercado Pago is in scope (OAuth Connect + server-driven polling). Other wallets and banks are out for v1 but the contracts (`PaymentClassifier`, proactive cards, SSE channel) are shaped so a Modo / Ualá / Naranja X integration could plug in without touching the agent.
+- **Aggregator-based bank scraping.** No Plaid, no Belvo, no Pluggy, no OFX, no CSV upload, no screen-scraping. The chosen integration model is OAuth-on-the-provider, not credentials-on-an-aggregator.
 - **Investments, portfolios, stocks, crypto.** Different domain.
 - **Multi-currency.** ARS only.
 - **Tax tracking, withholdings, AFIP/ARCA, retenciones.** Out of scope.
-- **Push notifications, scheduled alerts, email digests.** Gasti only speaks when the user opens the chat. No background channels.
+- **Out-of-session channels.** Gasti can speak unsolicited **while the chat is open** (SSE-pushed cards when a connected source reports a new payment or status change). Push notifications, scheduled alerts, email digests, and any other channel that reaches the user when the chat is closed are explicitly out.
 - **Mobile app / PWA polish.** Web only, desktop-first. Responsive behavior is welcome but not a v1 requirement.
 - **Recurring-transaction automation.** Users can declare recurring *income*, but Gasti does not auto-generate recurring expense transactions.
 - **Multi-account / shared-wallet semantics.** No "this card vs that card", no "shared with partner".
-- **Onboarding flows, KYC, profile setup.** No first-run wizard. The user opens the chat and starts talking.
+- **Onboarding flows, KYC, profile setup.** No first-run wizard. The user opens the chat and starts talking. (The first-connect MP backfill modal is the only modal in the product, and it defaults to "skip".)
 
 ## Further Notes
 
-- **Dataset staleness.** The seed `data/transactions.json` ends 2026-05-08. Because today's date is dynamic, a reviewer running this repo months later will see an empty "este mes" and uninteresting projections. Mitigation is a candidate choice (shift dates to now-relative at boot, regenerate the seed, accept the staleness). Not decided here.
+- **Dataset staleness.** The seed `data/transactions.json` ends 2026-05-24. Because today's date is dynamic, a reviewer running this repo months later will see an empty "este mes" and uninteresting projections. Mitigation is a candidate choice (shift dates to now-relative at boot, regenerate the seed, accept the staleness). Not decided here. Real MP-connected sessions side-step this entirely — the polling loop keeps the dataset fresh on its own.
 - **Dynamic-date trade-off acknowledged.** Demos are less deterministic across run dates. The product choice favors honest behavior over demo-friendly fiction.
 - **No specific persona, by design.** The product accommodates a salaried employee, a freelancer, or a household lead — anyone whose data fits the schema. The trade-off: less product "impronta" than a sharply-defined persona would give. Compensation is in tool depth, Mastra idiomaticness, and UX detail around tool-call transparency and override resolution.
 - **Mastra MCP available.** `.mcp.json` wires `@mastra/mcp-docs-server` for live Mastra docs. Use it before guessing any Mastra API.
